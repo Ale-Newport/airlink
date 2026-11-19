@@ -1,0 +1,47 @@
+# Weekly, grouped, so updates arrive as a few reviewable pull requests rather
+# than a stream. Every one of them needs the code owner's approval to merge,
+# exactly like a human contribution.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    labels: ["dependencies"]
+    commit-message:
+      prefix: "deps"
+    groups:
+      dev-tooling:
+        dependency-type: development
+        update-types: ["minor", "patch"]
+      runtime-patches:
+        dependency-type: production
+        update-types: ["patch"]
+    ignore:
+      # React Native and its native modules move together and need a device
+      # test and a Pods/Gradle regeneration; they are upgraded by hand.
+      - dependency-name: "react-native"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: "react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@react-native/*"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    labels: ["dependencies", "ci"]
+    commit-message:
+      prefix: "ci"
+    groups:
+      actions:
+        patterns: ["*"]
+
+  - package-ecosystem: gradle
+    directory: /apps/mobile/android
+    schedule:
+      interval: monthly
+    labels: ["dependencies", "platform: android"]

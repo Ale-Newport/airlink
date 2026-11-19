@@ -1,0 +1,29 @@
+# Normalise line endings; scripts must stay LF or they break on macOS/Linux.
+* text=auto eol=lf
+*.sh text eol=lf
+gradlew text eol=lf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Binary assets: never diff or merge as text.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.mp4 binary
+*.mov binary
+*.ttf binary
+*.otf binary
+*.jar binary
+*.keystore binary
+*.p12 binary
+
+# Xcode project files merge badly as text; union keeps both sides' entries.
+*.pbxproj merge=union
+
+# Generated files: collapsed in diffs and excluded from language stats.
+pnpm-lock.yaml linguist-generated=true
+apps/mobile/ios/Podfile.lock linguist-generated=true
+docs/** linguist-documentation=true

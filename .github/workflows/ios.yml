@@ -1,0 +1,54 @@
+name: iOS build
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/mobile/ios/**"
+      - "apps/mobile/package.json"
+      - "native/**"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/ios.yml"
+  pull_request:
+    paths:
+      - "apps/mobile/ios/**"
+      - "native/**"
+      - ".github/workflows/ios.yml"
+  schedule:
+    - cron: "41 5 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  simulator:
+    name: Build for the iOS Simulator (no signing)
+    runs-on: macos-26
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - uses: ruby/setup-ruby@f9c4492e86def3e644ab32a0ef185eda5b0c20d0 # v1.342.0
+        with:
+          ruby-version: "3.3"
+          working-directory: apps/mobile
+          bundler-cache: true
+      - name: Install Pods
+        working-directory: apps/mobile/ios
+        run: bundle exec pod install
+      - name: Build
+        env:
+          CODE_SIGNING_ALLOWED: "NO"
+        run: ./scripts/build-ios.sh 'generic/platform=iOS Simulator' Debug
