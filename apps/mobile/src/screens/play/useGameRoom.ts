@@ -196,6 +196,9 @@ export function useGameRoom(params: GameRoomParams): GameRoomView {
   const finishedWrittenRef = useRef(false);
 
   const [phase, setPhase] = useState<RoomPhase>(RoomPhase.PREPARING);
+  /** The phase as of the last render, for handlers that must not re-subscribe on every change. */
+  const phaseRef = useRef(phase);
+  phaseRef.current = phase;
   const [blockedReason, setBlockedReason] = useState<string | null>(null);
   const [incomingRematch, setIncomingRematch] = useState<GameInvite | null>(null);
   /**
@@ -394,6 +397,8 @@ export function useGameRoom(params: GameRoomParams): GameRoomView {
   }, [client, peerKey]);
 
   const live = connection === ConnectionState.CONNECTED;
+  const liveRef = useRef(live);
+  liveRef.current = live;
 
   // -- incoming messages ----------------------------------------------------
 
@@ -422,8 +427,15 @@ export function useGameRoom(params: GameRoomParams): GameRoomView {
            *
            * A snapshot we cannot decode is dropped; another is along shortly.
            */
+          const versionBefore = game.stateVersion;
           if (!game.applySnapshotEnvelope(snapshot.envelope)) return;
           interpolator.push(game.currentState as unknown, message.receivedAt);
+          // Boards that draw from the frame feed repaint on their own; a board
+          // drawn from React state (Pool's table between shots) only repaints
+          // on a render. A snapshot that carried new actions - the host's shot,
+          // overtaking its own reliable copy, which then arrives as a duplicate
+          // and is ignored - used to leave that table frozen on the old turn.
+          if (game.stateVersion !== versionBefore) bumpBoard();
           const settled = game.status;
           if (settled.kind !== GameStatusKind.IN_PROGRESS) {
             persistOutcome(settled);
@@ -474,10 +486,17 @@ export function useGameRoom(params: GameRoomParams): GameRoomView {
           setRowState(client, gameSessionId, 'active');
           break;
 
-        case MessageType.GAME_DECLINE:
-          setPhase(RoomPhase.DECLINED);
+        case MessageType.GAME_DECLINE: {
+          // A "no" answers an invitation, and only while one is outstanding.
+          // A stale rematch banner can still send one after the game it named
+          // was accepted and started; that must not end a game in progress.
+          const asking = (p: string): boolean =>
+            p === RoomPhase.INVITING || p === RoomPhase.DELIVERED || p === RoomPhase.UNANSWERED;
+          if (!asking(phaseRef.current)) break;
+          setPhase((current) => (asking(current) ? RoomPhase.DECLINED : current));
           setRowState(client, gameSessionId, 'declined');
           break;
+        }
 
         case MessageType.GAME_LEAVE:
         case MessageType.GAME_END:
@@ -748,8 +767,11 @@ export function useGameRoom(params: GameRoomParams): GameRoomView {
         let drawable: unknown;
         if (isHost) {
           // The host runs the authoritative simulation. Everything drawn on
-          // either device is a picture of what happens on this line.
-          game.tick(delta);
+          // either device is a picture of what happens on this line - so it
+          // stops while the guest cannot see it or play. Running on through a
+          // dropped link served the puck again after each goal and could decide
+          // points, or the match, while the guest read "Reconnecting...".
+          if (liveRef.current) game.tick(delta);
           drawable = game.currentState;
           if (handle && now - lastSnapshotAt >= SNAPSHOT_INTERVAL_MS) {
             lastSnapshotAt = now;

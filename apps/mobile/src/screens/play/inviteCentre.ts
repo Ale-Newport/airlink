@@ -234,18 +234,28 @@ class GameInviteCentre {
       return;
     }
 
-    let existing = false;
+    let row: { state: string } | null = null;
     try {
-      existing = this.client.db.games.get(invite.sessionId) !== null;
+      row = this.client.db.games.get(invite.sessionId);
     } catch {
-      existing = false;
+      row = null;
     }
     // A row we already hold means this game is known: the host repeating its
     // invite, or announcing one that is already on the "in progress" shelf.
-    if (existing) return;
+    //
+    // Except one that is still only 'invited' with nothing on screen for it:
+    // the first ask went unanswered and expired here, and the host has tapped
+    // "Try again" - a new invite id for the same game. That used to be
+    // acknowledged (so the host saw "Delivered") and then never shown, every
+    // time, for the full forty-five seconds.
+    const askingAgain =
+      row?.state === 'invited' && ![...this.invites.values()].some((r) => r.sessionId === invite.sessionId);
+    if (row && !askingAgain) return;
 
     const host = invite.players[0] ?? me;
-    if (!createGameRow(this.client, invite.sessionId, entry.definition, invite.seed, invite.players, host)) return;
+    if (!row && !createGameRow(this.client, invite.sessionId, entry.definition, invite.seed, invite.players, host)) {
+      return;
+    }
 
     this.prune();
     this.invites.set(invite.inviteId, {

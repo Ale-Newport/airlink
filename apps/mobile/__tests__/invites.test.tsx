@@ -238,6 +238,26 @@ test('an answered invitation is not asked again when the invite is repeated', as
   expect(centre.list()).toHaveLength(0);
 });
 
+test('"Try again" after an unanswered invitation is asked again, not swallowed', async () => {
+  const { clock, maria, sessionA, sessionM } = await twoConnectedPhones();
+  const centre = inviteCentreFor(maria);
+  const players = [sessionM.peerId as string, sessionA.peerId as string];
+
+  sessionA.sendReliable(MessageType.GAME_INVITE, inviteFor('game-7', 'inv-7a', players, Date.now() + 45000));
+  await clock.advanceAsync(2000);
+  expect(centre.list().map((i) => i.inviteId)).toEqual(['inv-7a']);
+
+  // The first ask leaves the screen unanswered (it ran out here). The game row
+  // it created stays behind, still 'invited'.
+  centre.forget('inv-7a');
+
+  // The host taps "Try again": same game, new invite id. It used to be
+  // acknowledged and then never shown, because the row already existed.
+  sessionA.sendReliable(MessageType.GAME_INVITE, inviteFor('game-7', 'inv-7b', players, Date.now() + 45000));
+  await clock.advanceAsync(2000);
+  expect(centre.list().map((i) => i.inviteId)).toEqual(['inv-7b']);
+});
+
 test('an invitation that names somebody else is ignored', async () => {
   const { clock, maria, sessionA } = await twoConnectedPhones();
   const centre = inviteCentreFor(maria);
