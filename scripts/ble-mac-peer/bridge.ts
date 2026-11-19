@@ -76,10 +76,11 @@ if (LOG_FILE) {
   writeFileSync(LOG_FILE, '');
   const print = console.log.bind(console);
   console.log = (...parts: unknown[]): void => {
-    print(...parts);
-    // eslint-disable-next-line no-control-regex
     // One record per line: a CR or LF inside a part could forge a log entry.
-    appendFileSync(LOG_FILE, `${parts.join(' ').replace(/\x1b\[[0-9;]*m/g, '').replace(/[\r\n]+/g, ' ')}\n`);
+    const line = parts.join(' ').replace(/\n|\r/g, ' ');
+    print(line);
+    // eslint-disable-next-line no-control-regex
+    appendFileSync(LOG_FILE, `${line.replace(/\x1b\[[0-9;]*m/g, '')}\n`);
   };
 }
 
@@ -304,7 +305,7 @@ function onRadioMessage(message: Record<string, unknown>): void {
   switch (message.op) {
     case 'log':
       // The radio helper is another process; keep each of its lines one line.
-      console.log(String(message.line).replace(/[\r\n]+/g, ' '));
+      console.log(String(message.line).replace(/\n|\r/g, ' '));
       break;
     case 'open': {
       results.linksOpened += 1;
