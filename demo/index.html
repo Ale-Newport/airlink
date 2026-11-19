@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AirLink: offline chat, games and file sharing between two phones</title>
+  <meta name="description" content="AirLink connects two phones with no signal, no Wi-Fi and no server: encrypted chat, 28 two-player games, file sharing and synchronised video over Bluetooth LE and local Wi-Fi. Run the real protocol in your browser.">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#0b1220">
+  <link rel="canonical" href="https://ale-newport.github.io/airlink/">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="AirLink: two phones, no signal, still together">
+  <meta property="og:description" content="Encrypted chat, games, file sharing and synchronised video between two phones over Bluetooth LE and local Wi-Fi. Open source.">
+  <meta property="og:url" content="https://ale-newport.github.io/airlink/">
+  <meta property="og:image" content="https://ale-newport.github.io/airlink/media/social-preview.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" type="image/png" href="media/icon-180.png">
+  <link rel="apple-touch-icon" href="media/icon-180.png">
+  <link rel="stylesheet" href="style.css">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareSourceCode",
+    "name": "AirLink",
+    "description": "Offline peer-to-peer app for encrypted chat, multiplayer games, file sharing and synchronised video over Bluetooth LE and local Wi-Fi.",
+    "codeRepository": "https://github.com/Ale-Newport/airlink",
+    "programmingLanguage": ["TypeScript", "Swift", "Kotlin"],
+    "runtimePlatform": ["iOS", "Android"],
+    "license": "https://opensource.org/licenses/MIT"
+  }
+  </script>
+</head>
+<body>
+  <header class="bar">
+    <a class="brand" href="./"><img src="media/icon-180.png" alt="" width="28" height="28"> AirLink</a>
+    <nav>
+      <a href="#try">Try the protocol</a>
+      <a href="https://github.com/Ale-Newport/airlink#readme">Docs</a>
+      <a class="gh" href="https://github.com/Ale-Newport/airlink">GitHub</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">Open source · iOS and Android</p>
+        <h1>Two phones. No signal.<br>Still together.</h1>
+        <p class="lede">AirLink connects two phones directly over Bluetooth LE and local Wi-Fi, with no internet, no account and no server. Chat, send photos and voice notes, play one of 28 two-player games, and watch a film in sync, end-to-end encrypted.</p>
+        <div class="ctas">
+          <a class="btn primary" href="#try">Run the real protocol</a>
+          <a class="btn" href="https://github.com/Ale-Newport/airlink">View the source</a>
+        </div>
+      </div>
+      <figure class="phone">
+        <video src="media/demo.mp4" poster="media/demo-poster.jpg" autoplay muted loop playsinline width="295" height="640" aria-label="Screen recording of AirLink on an iPhone in airplane mode: finding a nearby phone, confirming a six-digit code, chatting, sending a photo and playing tic-tac-toe"></video>
+        <figcaption>Recorded on a real iPhone in airplane mode.</figcaption>
+      </figure>
+    </section>
+
+    <section id="try" class="try">
+      <h2>Run the real protocol, right here</h2>
+      <p>This page bundles <code>@airlink/core</code> unchanged: the same TypeScript that performs the handshake, encryption, retransmission and transport migration on a phone. Two simulated devices talk over a simulated radio on a virtual clock, so a minute of Bluetooth takes milliseconds and every run is exactly repeatable.</p>
+      <div class="scenarios" role="group" aria-label="Scenarios">
+        <button data-scenario="all" class="primary">Run all</button>
+        <button data-scenario="ping">Ping</button>
+        <button data-scenario="throughput">Throughput</button>
+        <button data-scenario="loss">Packet loss</button>
+        <button data-scenario="reconnect">Reconnect</button>
+        <button data-scenario="upgrade">Bluetooth → Wi-Fi</button>
+        <button data-scenario="transfer">100 KB over BLE</button>
+        <button data-scenario="group">Three peers</button>
+      </div>
+      <div id="terminal" class="terminal" role="log" aria-live="polite"><div class="t-dim">Pick a scenario. Nothing here touches a network.</div></div>
+      <p id="run-status" class="run-status" aria-live="polite"></p>
+    </section>
+
+    <section class="features">
+      <h2>What it does</h2>
+      <div class="grid">
+        <article><h3>Chat</h3><p>Text, photos, voice notes, replies, reactions, read receipts and typing, stored only on the device.</p></article>
+        <article><h3>Play</h3><p>28 two-player games, from chess with the full rules to real-time air hockey, sorted by what the link can carry.</p></article>
+        <article><h3>Share</h3><p>Chunked, resumable, verified file transfer with an honest ETA, even at Bluetooth speeds.</p></article>
+        <article><h3>Watch together</h3><p>Play the same local video on both phones, kept in step to within tens of milliseconds.</p></article>
+        <article><h3>Private by construction</h3><p>Ed25519 identities, a SIGMA-I handshake and ChaCha20-Poly1305, with no account and no server to leak.</p></article>
+        <article><h3>Survives the real world</h3><p>A session outlives its link: drop Bluetooth, reconnect over Wi-Fi, and not one message is lost.</p></article>
+      </div>
+    </section>
+
+    <section class="honest">
+      <h2>The honest part</h2>
+      <p>With no network, iPhone and Android share exactly one radio: Bluetooth Low Energy. AirLink is built for that slow path and upgrades invisibly when something faster appears.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Phones</th><th>Transport</th><th>Speed</th></tr></thead>
+          <tbody>
+            <tr><td>iPhone ↔ iPhone</td><td>Apple peer-to-peer Wi-Fi</td><td>tens of MB/s</td></tr>
+            <tr><td>Android ↔ Android</td><td>Wi-Fi Direct</td><td>several MB/s</td></tr>
+            <tr><td>iPhone ↔ Android</td><td>Bluetooth LE only</td><td>~5–40 KB/s</td></tr>
+            <tr><td>Any pair on one Wi-Fi</td><td>Bonjour / NSD + TCP</td><td>MB/s</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="shots" aria-label="Screenshots">
+      <img src="media/shots/1.jpg" alt="Welcome screen: stay connected wherever you go. No signal, no Wi-Fi, no problem." loading="lazy" width="400" height="869">
+      <img src="media/shots/2.jpg" alt="First meeting: both phones show the same six-digit code to rule out an eavesdropper." loading="lazy" width="400" height="869">
+      <img src="media/shots/3.jpg" alt="Chat with a photo sent with zero bars of signal." loading="lazy" width="400" height="869">
+      <img src="media/shots/4.jpg" alt="The Play shelf: quick and strategy games, sorted by length." loading="lazy" width="400" height="869">
+      <img src="media/shots/5.jpg" alt="Four in a Row halfway through." loading="lazy" width="400" height="869">
+    </section>
+  </main>
+
+  <footer>
+    <p>MIT licensed · <a href="https://github.com/Ale-Newport/airlink">Source</a> · <a href="https://github.com/Ale-Newport/airlink/blob/main/docs/SECURITY.md">Security design</a> · <a href="https://ale-newport.github.io/airlink-support/privacy.html">Privacy</a></p>
+  </footer>
+
+  <script type="module" src="main.js"></script>
+</body>
+</html>
