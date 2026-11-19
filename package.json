@@ -14,6 +14,8 @@
     "test:games": "pnpm --filter @airlink/games test",
     "test:acceptance": "pnpm --filter @airlink/acceptance test",
     "harness": "tsx scripts/harness.ts",
+    "demo:build": "node demo/build.mjs",
+    "lint": "pnpm --filter @airlink/mobile lint",
     "ios": "pnpm --filter @airlink/mobile ios",
     "android": "pnpm --filter @airlink/mobile android",
     "start": "pnpm --filter @airlink/mobile start",
@@ -22,9 +24,11 @@
     "icons": "./scripts/make-icons.sh"
   },
   "devDependencies": {
-    "typescript": "^5.9.2",
-    "vitest": "^3.2.4",
     "@types/node": "^24.3.0",
-    "tsx": "^4.20.6"
+    "esbuild": "^0.28.2",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.2",
+    "vite": "^7.3.8",
+    "vitest": "^4.1.12"
   }
 }
