@@ -14,6 +14,7 @@ import { GameSession, RejectionReason } from '../src/runtime.js';
 import { ticTacToe } from '../src/games/ticTacToe.js';
 import { GameStatusKind } from '../src/engine.js';
 import { connectFour } from '../src/games/connectFour.js';
+import { pong } from '../src/games/pong.js';
 
 const PLAYERS = ['host', 'guest'];
 
@@ -144,6 +145,7 @@ describe('a missed move', () => {
     expect(lost.accepted).toBe(true);
     expect(guest.stateVersion).toBe(2);
     expect(host.stateVersion).toBe(1); // the host never heard it
+    guest.forgetUnconfirmed(); // and the app knows: the send failed
 
     expect(guest.applySnapshotEnvelope(host.snapshotEnvelope())).toBe(true);
     expect(guest.snapshot()).toEqual(host.snapshot());
@@ -165,7 +167,11 @@ describe('a long game under repeated loss', () => {
     let frame = 0;
     const send = (from: GameSession<never, never>, to: GameSession<never, never>, encoded: unknown): void => {
       frame += 1;
-      if (frame % 3 === 0) return; // lost
+      if (frame % 3 === 0) {
+        // Lost - and the sender learns it, as the app does from deliveryFailed.
+        from.forgetUnconfirmed();
+        return;
+      }
       const outcome = to.applyRemote(encoded as never, from === host ? 'host' : 'guest');
       if (!outcome.accepted && reasonOf(outcome) === RejectionReason.OUT_OF_ORDER && to === guest) {
         guest.applySnapshotEnvelope(host.snapshotEnvelope());
@@ -238,6 +244,8 @@ describe('a move that was never sent', () => {
     expect(lost.accepted).toBe(true);
     expect(guest.stateVersion).toBe(2);
     expect(host.stateVersion).toBe(1);
+    // The app learns the send failed (deliveryFailed, or trySend said no).
+    guest.forgetUnconfirmed();
 
     // Asking the host for the board takes that move back. It has to: as far as
     // the rest of the world is concerned it never happened, and a guest holding
@@ -309,5 +317,62 @@ describe('somebody leaves', () => {
     const { guest } = pair();
     guest.abandon('host');
     expect(guest.applyRemote({ t: 'place', s: 0, p: { c: 0 } } as never, 'host').accepted).toBe(false);
+  });
+});
+
+describe('a snapshot that overtakes our own move in flight', () => {
+  /**
+   * A host snapshot is always a little old. It can be taken before our latest
+   * actions reached the host, and land after we sent them. Adopting it used to
+   * rewind our action counter to the host's, so our NEXT action reused a
+   * number the host had already accepted and was thrown away as a duplicate.
+   */
+  it('pong: releasing the button after a snapshot still stops the paddle on the host', () => {
+    const setup = { players: PLAYERS, seed: 7, options: {} };
+    const host = new GameSession({ definition: pong, setup, localPlayer: 'host', isHost: true });
+    const guest = new GameSession({ definition: pong, setup, localPlayer: 'guest', isHost: false });
+
+    const press = guest.submitLocal('input', { dir: -1 } as never);
+    host.tick(66);
+    const inFlight = host.snapshotEnvelope(); // taken before the press arrived
+    expect(host.applyRemote(guest.encode(applied(press).action), 'guest').accepted).toBe(true);
+    expect(guest.applySnapshotEnvelope(inFlight)).toBe(true);
+
+    const release = guest.submitLocal('input', { dir: 0 } as never);
+    expect(applied(release).action.seq).toBe(1);
+    expect(host.applyRemote(guest.encode(applied(release).action), 'guest').accepted).toBe(true);
+    expect((host.currentState as unknown as { paddles: { dir: number }[] }).paddles[1]!.dir).toBe(0);
+  });
+
+  it('tic-tac-toe: a move made while a resync was answered stays, and both boards agree', () => {
+    const { host, guest } = pair();
+    const opening = host.submitLocal('place', { cell: 0 });
+    guest.applyRemote(host.encode(applied(opening).action), 'host');
+
+    const move = guest.submitLocal('place', { cell: 4 });
+    const reply = host.snapshotEnvelope(); // answers our sync request, before our move landed
+    expect(host.applyRemote(guest.encode(applied(move).action), 'guest').accepted).toBe(true);
+    expect(guest.applySnapshotEnvelope(reply)).toBe(true);
+
+    // Our move is still on our board, as it is on the host's.
+    expect(guest.currentState.board[4]).not.toBe(0);
+    expect(guest.snapshot()).toEqual(host.snapshot());
+    expect(guest.turn).toBe('host');
+
+    // And the game carries on: the host's next move lands cleanly on the guest.
+    const next = host.submitLocal('place', { cell: 8 });
+    expect(guest.applyRemote(host.encode(applied(next).action), 'host').accepted).toBe(true);
+  });
+
+  it('drops moves the host has already counted rather than applying them twice', () => {
+    const { host, guest } = pair();
+    const opening = host.submitLocal('place', { cell: 0 });
+    guest.applyRemote(host.encode(applied(opening).action), 'host');
+    const move = guest.submitLocal('place', { cell: 4 });
+    host.applyRemote(guest.encode(applied(move).action), 'guest');
+
+    expect(guest.applySnapshotEnvelope(host.snapshotEnvelope())).toBe(true);
+    expect(guest.stateVersion).toBe(host.stateVersion);
+    expect(guest.snapshot()).toEqual(host.snapshot());
   });
 });

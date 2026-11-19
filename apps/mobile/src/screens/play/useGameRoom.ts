@@ -568,6 +568,8 @@ export function useGameRoom(params: GameRoomParams): GameRoomView {
        */
       session.events.on('deliveryFailed', ({ messageType }) => {
         if (messageType !== MessageType.GAME_EVENT) return;
+        // Not in flight any more: the next board from the host takes it back.
+        sessionRef.current?.forgetUnconfirmed();
         divergedRef.current = true;
         requestResync();
       }),
@@ -827,7 +829,9 @@ export function useGameRoom(params: GameRoomParams): GameRoomView {
       // deduplicates on a per-player sequence number, so one dropped input
       // would stall every later one behind it.
       if (!trySend(handle.session, MessageType.GAME_EVENT, encodeEvent(gameSessionId, encoded, previousVersion))) {
-        // Applied here, never sent. Repaired as soon as there is a link again.
+        // Applied here, never sent. Repaired as soon as there is a link again,
+        // by a board from the host that takes this move back.
+        game.forgetUnconfirmed();
         divergedRef.current = true;
       }
 

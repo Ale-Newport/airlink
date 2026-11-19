@@ -655,3 +655,75 @@ describe('air hockey conformance', () => {
     }
   });
 });
+
+/**
+ * Issue #6: `serveAt` is an absolute time on the host's simulated clock.
+ *
+ * A guest's own clock can start somewhere else entirely - it joined late, or
+ * it was resynchronised. What keeps the serve in step is that every snapshot
+ * envelope carries the host's clock and the guest adopts it with the board.
+ * What could still break it is a LATE snapshot: realtime snapshots have no
+ * sequence number, and in a realtime game the version (an action count) barely
+ * moves, so one that arrives after a newer one used to be adopted and dragged
+ * the guest's clock back behind `serveAt`.
+ */
+describe('serve timing between host and guest (#6)', () => {
+  const STEPS_PER_SECOND = 60;
+
+  it('a guest whose clock started elsewhere serves on the same tick as the host', () => {
+    const host = session('a', true);
+    const guest = session('b', false);
+
+    // The guest has been running on its own for 2.5 s: on its clock the
+    // face-off is almost over. The host has only just started.
+    guest.tick(2500);
+    expect(airHockeyView(guest.currentState, guest.simulatedMs).countdownMs).toBeLessThan(600);
+
+    host.tick(500);
+    expect(guest.applySnapshotEnvelope(host.snapshotEnvelope())).toBe(true);
+    expect(guest.simulatedMs).toBe(host.simulatedMs);
+
+    // From here both run the same ticks and must agree on every one of them,
+    // through the serve at 3,000 ms and beyond.
+    for (let i = 0; i < 3 * STEPS_PER_SECOND; i++) {
+      host.tick(STEP_MS);
+      guest.tick(STEP_MS);
+      const h = airHockeyView(host.currentState, host.simulatedMs);
+      const g = airHockeyView(guest.currentState, guest.simulatedMs);
+      expect(g.live).toBe(h.live);
+      expect(g.countdownMs).toBe(h.countdownMs);
+    }
+    expect(airHockeyView(host.currentState, host.simulatedMs).live).toBe(true);
+    expect(toHex(encodeCbor(airHockey.encodeState(guest.currentState) as CborValue))).toBe(
+      toHex(encodeCbor(airHockey.encodeState(host.currentState) as CborValue)),
+    );
+  });
+
+  it('refuses a late snapshot that would wind the guest back behind the serve', () => {
+    const host = session('a', true);
+    const guest = session('b', false);
+
+    host.tick(2900);
+    const early = host.snapshotEnvelope(); // still in the face-off
+    host.tick(400);
+    const late = host.snapshotEnvelope(); // puck live
+    expect(late.version).toBe(early.version); // nobody acted: only the clock tells them apart
+
+    expect(guest.applySnapshotEnvelope(late)).toBe(true);
+    expect(airHockeyView(guest.currentState, guest.simulatedMs).live).toBe(true);
+
+    // The early one arrives last, e.g. still in flight on the old link while
+    // the session moved from Bluetooth to Wi-Fi.
+    expect(guest.applySnapshotEnvelope(early)).toBe(false);
+    expect(guest.simulatedMs).toBe(late.elapsedMs);
+    expect(airHockeyView(guest.currentState, guest.simulatedMs).live).toBe(true);
+  });
+
+  it('still adopts a snapshot with the same clock, as a turn-based resync sends', () => {
+    const host = session('a', true);
+    const guest = session('b', false);
+    host.tick(1000);
+    expect(guest.applySnapshotEnvelope(host.snapshotEnvelope())).toBe(true);
+    expect(guest.applySnapshotEnvelope(host.snapshotEnvelope())).toBe(true);
+  });
+});

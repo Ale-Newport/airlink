@@ -94,6 +94,15 @@ export class GameSession<TState, TAction extends GameAction = GameAction> {
   private version = 0;
   /** The newest host snapshot this device has taken, so a late one is refused. */
   private adoptedHostVersion = -1;
+  /** The host clock of that snapshot. See `applySnapshotEnvelope`. */
+  private adoptedHostElapsedMs = -1;
+  /**
+   * A guest's own actions, applied here and sent, that no host snapshot has
+   * yet counted. See `applySnapshotEnvelope`. Bounded: a host that never
+   * answers is a dead link, not a reason to grow without limit.
+   */
+  private unconfirmed: TAction[] = [];
+  private static readonly MAX_UNCONFIRMED = 128;
   /** Who left, if anybody. See `abandon`. */
   private abandonedBy: PlayerId | null = null;
   private readonly historyLimit: number;
@@ -206,7 +215,13 @@ export class GameSession<TState, TAction extends GameAction = GameAction> {
     }
 
     const outcome = this.applyInternal(action);
-    if (outcome.accepted) this.localSeq += 1;
+    if (outcome.accepted) {
+      this.localSeq += 1;
+      if (!this.options.isHost) {
+        this.unconfirmed.push(action);
+        if (this.unconfirmed.length > GameSession.MAX_UNCONFIRMED) this.unconfirmed.shift();
+      }
+    }
     return outcome;
   }
 
@@ -309,6 +324,17 @@ export class GameSession<TState, TAction extends GameAction = GameAction> {
     }
   }
 
+  /**
+   * Our own actions that this device knows never left it, or that the link
+   * gave up on. The next host snapshot then takes them back, which is the
+   * honest answer for a move the rest of the world never saw - rather than
+   * laying them on top of the host's board as if they were merely in flight.
+   * Call it when a send fails or `deliveryFailed` names a game action.
+   */
+  forgetUnconfirmed(): void {
+    this.unconfirmed = [];
+  }
+
   /** Serialise the whole state, for a snapshot or for persistence. */
   snapshot(): CborValue {
     return this.options.definition.encodeState(this.state);
@@ -373,6 +399,16 @@ export class GameSession<TState, TAction extends GameAction = GameAction> {
      * Host versions only ever compare meaningfully with other host versions.
      */
     if (envelope.version < this.adoptedHostVersion) return false;
+    /*
+     * In a realtime game the version barely moves - it counts actions, and the
+     * puck moves on ticks - so two snapshots a second apart usually share one.
+     * Their host clocks still order them. Realtime snapshots travel with no
+     * sequence number, and one can arrive late: still in flight on the old
+     * link while the session moved from Bluetooth to Wi-Fi, say. Adopting it
+     * would rewind the table, and in Air Hockey drag the guest's clock back
+     * behind `serveAt`, freezing the mallets again until the next snapshot.
+     */
+    if (envelope.version === this.adoptedHostVersion && envelope.elapsedMs < this.adoptedHostElapsedMs) return false;
     let next: TState;
     try {
       next = this.options.definition.decodeState(envelope.state);
@@ -382,6 +418,7 @@ export class GameSession<TState, TAction extends GameAction = GameAction> {
     this.state = next;
     this.version = envelope.version;
     this.adoptedHostVersion = envelope.version;
+    this.adoptedHostElapsedMs = envelope.elapsedMs;
     this.elapsedMs = envelope.elapsedMs;
     this.nextSeqByPlayer.clear();
     for (const [player, seq] of Object.entries(envelope.seq)) {
@@ -390,7 +427,27 @@ export class GameSession<TState, TAction extends GameAction = GameAction> {
     // Our own next action must continue from what the host believes it has
     // already seen from us, or the very first move after a resync is rejected
     // as a duplicate.
-    this.localSeq = this.nextSeqByPlayer.get(this.options.localPlayer) ?? this.localSeq;
+    //
+    // But a snapshot is always a little old: it can have been taken before our
+    // latest actions reached the host. Those are on the wire and the host will
+    // apply them, so they must not be forgotten here - forgetting them rewound
+    // our counter, and our NEXT action reused a number the host had already
+    // accepted and was dropped as a duplicate (a Pong paddle that never
+    // stopped; a move made just after a reconnect that vanished from our own
+    // board). So: drop what the host has counted, and lay the rest back on top
+    // of its board, in order, exactly as the host is about to.
+    const local = this.options.localPlayer;
+    const counted = this.nextSeqByPlayer.get(local) ?? 0;
+    this.unconfirmed = this.unconfirmed.filter((action) => action.seq >= counted);
+    const pending = this.unconfirmed;
+    this.unconfirmed = [];
+    for (const action of pending) {
+      // One that no longer fits the host's board will be refused there too.
+      // Drop it and what followed it; the next snapshot settles the counters.
+      if (!this.applyInternal(action).accepted) break;
+      this.unconfirmed.push(action);
+    }
+    this.localSeq = this.nextSeqByPlayer.get(local) ?? this.localSeq;
     return true;
   }
 
