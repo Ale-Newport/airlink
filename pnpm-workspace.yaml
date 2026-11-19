@@ -3,3 +3,21 @@ packages:
   - 'apps/*'
   - 'native/*'
   - 'tests'
+
+# Patched releases of transitive build/dev tooling, each held inside the major
+# version its parent asked for. None of these ship inside the app bundle.
+# Re-check with `pnpm audit`; drop an entry once its parent depends on the fix.
+overrides:
+  'brace-expansion@<1.1.22': '^1.1.22'
+  'brace-expansion@>=5.0.0 <5.0.13': '^5.0.13'
+  'shell-quote@<1.12.0': '^1.12.0'
+  'launch-editor@<2.14.2': '^2.14.2'
+  'joi@<17.13.9': '^17.13.9'
+  'compression@<1.8.2': '^1.8.2'
+  'body-parser@>=2.0.0 <2.4.0': '^2.4.0'
+  'qs@>=6.7.0 <6.17.1': '^6.17.1'
+  'zod@>=4.0.0 <4.6.7': '^4.6.7'
+  'fast-xml-parser@>=5.0.0 <5.12.1': '^5.12.1'
+  'glob@>=13.0.0 <14.0.6': '^14.0.6'
+  'minimatch@>=10.0.0 <11.0.9': '^11.0.9'
+  'source-map-js@>=1.0.0 <1.2.4': '^1.2.4'
