@@ -171,6 +171,12 @@ final class BleTransport: NSObject, AirLinkTransport {
     private static let maxConcurrentIdentityProbes = 2
     private static let identityProbeTimeoutMs = 6_000
     private static let identityProbeCooldownMs = 60_000
+    /// How long an identity read stays good enough not to ask again. A phone
+    /// with several friends broadcasts each friend's token in turn, so one
+    /// read catches somebody else's turn more often than ours; and tokens
+    /// rotate every five minutes. Asking again now and then is what lets a
+    /// friend be recognised over Bluetooth alone.
+    private static let identityRefreshMs = 120_000
 
     // MARK: - Links
 
@@ -976,6 +982,13 @@ final class BleTransport: NSObject, AirLinkTransport {
     }
 
     private func adopt(channel: CBL2CAPChannel, for link: BleLink) {
+        // Never replace a running session: the first one's streams would be
+        // left open with nothing to close them, and when it later closed it
+        // would mark the link's fast path gone while the second still ran.
+        guard link.l2cap == nil else {
+            discard(channel: channel, why: "link \(link.id) already has an L2CAP session")
+            return
+        }
         link.l2capTimer?.cancel()
         link.l2capTimer = nil
 
@@ -1440,9 +1453,11 @@ extension BleTransport: CBCentralManagerDelegate {
     private func scheduleIdentityProbe(_ peripheral: CBPeripheral) {
         let identifier = peripheral.identifier
 
-        // Already known, already busy, or already being asked.
+        // Already known recently enough, already busy, or already being asked.
+        let probedAt = lastProbeAt[identifier]
         if let record = discovered[identifier.uuidString], !record.token.isEmpty || !record.discoveryId.isEmpty {
-            return
+            let fresh = probedAt.map { (CFAbsoluteTimeGetCurrent() - $0) * 1000 < Double(Self.identityRefreshMs) } ?? true
+            if fresh { return }
         }
         guard identityProbes[identifier] == nil else { return }
         guard linkIdByPeripheral[identifier] == nil else { return }
@@ -1750,6 +1765,14 @@ extension BleTransport: CBPeripheralDelegate {
         }
         guard let channel, error == nil else {
             abandonFastPath(link, reason: error?.localizedDescription ?? "channel did not open")
+            return
+        }
+        // Only the link that asked, and only while it is still waiting. A
+        // channel requested by an earlier link to this peripheral can finish
+        // opening after that link closed and a new one took its place; the new
+        // link did not ask for it, or is waiting on its own.
+        guard link.fastPath == .opening, link.l2cap == nil else {
+            discard(channel: channel, why: "link \(link.id) did not ask for this channel")
             return
         }
         adopt(channel: channel, for: link)

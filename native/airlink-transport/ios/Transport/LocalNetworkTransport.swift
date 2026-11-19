@@ -288,6 +288,11 @@ final class LocalNetworkTransport: AirLinkTransport, @unchecked Sendable {
     private var links: [String: NetworkPeerLink] = [:]
 
     private var browserRestartAttempt = 0
+    /// When the current browser started. A new browser re-reports every
+    /// service still present, so an entry not seen since then has gone.
+    private var browserStartedAt: TimeInterval = 0
+    /// How long a new browser gets to re-report what is still there.
+    private static let browserSettleSeconds: TimeInterval = 6
     private var listenerRestartAttempt = 0
 
     /// Set when the OS tells us the local-network prompt was refused. Sticky,
@@ -667,6 +672,7 @@ final class LocalNetworkTransport: AirLinkTransport, @unchecked Sendable {
         // extra DNS query per service, which on a link with two phones on it is
         // nothing.
         let created = NWBrowser(for: .bonjourWithTXTRecord(type: type, domain: nil), using: makeBrowserParameters())
+        browserStartedAt = Date().timeIntervalSince1970
 
         created.stateUpdateHandler = { [weak self] state in
             guard let self else { return }
@@ -718,12 +724,17 @@ final class LocalNetworkTransport: AirLinkTransport, @unchecked Sendable {
     }
 
     private func restartBrowser(type: String) {
-        guard isStarted, browserRestartAttempt < NetworkTiming.restartBackoffSeconds.count else {
+        guard isStarted else {
             browser?.cancel()
             browser = nil
             return
         }
-        let delay = NetworkTiming.restartBackoffSeconds[browserRestartAttempt]
+        // Keep trying at the longest interval rather than giving up. Giving up
+        // left Wi-Fi discovery silently off: JS only re-arms it when
+        // availability changes, and a browser that failed (often on return
+        // from the background) does not change it.
+        let schedule = NetworkTiming.restartBackoffSeconds
+        let delay = schedule[min(browserRestartAttempt, schedule.count - 1)]
         browserRestartAttempt += 1
         browser?.cancel()
         browser = nil
@@ -821,6 +832,22 @@ final class LocalNetworkTransport: AirLinkTransport, @unchecked Sendable {
         )
         timer.setEventHandler { [weak self] in
             guard let self, self.browser != nil else { return }
+            // A restarted browser never saw the peers that left while there
+            // was none, so it will never send `.removed` for them, and
+            // re-announcing them every five seconds kept them on the list for
+            // ever with a Connect button that times out. Once the new browser
+            // has had time to re-report what is really there, anything it has
+            // not seen is gone.
+            // Same clock as `lastSeen` (handleDiscovered).
+            let now = Date().timeIntervalSince1970
+            if now - self.browserStartedAt >= Self.browserSettleSeconds {
+                for (id, entry) in self.endpoints where entry.lastSeen < self.browserStartedAt {
+                    self.endpoints.removeValue(forKey: id)
+                    self.events?.peerLost(DiscoveredEndpoint(
+                        transport: self.kind, endpointId: id, name: entry.name, token: entry.token, rssi: 0
+                    ))
+                }
+            }
             for entry in self.endpoints.values {
                 self.events?.peerDiscovered(DiscoveredEndpoint(
                     transport: self.kind,
