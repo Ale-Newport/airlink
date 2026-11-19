@@ -81,6 +81,9 @@ video in sync.
   empty rather than failing `NOT NULL` on a driver that binds a zero-length
   buffer as NULL, as Node 22's `node:sqlite` does. Found by the new Node 22 CI
   job.
+- Base64 decoding strips padding with a loop instead of `/=+$/`, which took
+  18 seconds on a 200 KB run of `=` from a peer or a QR code; it now rejects
+  that input at once. Found by CodeQL.
 - Branch rulesets: every outside contribution needs the code owner's approval.
 - The network harness now exits non-zero when a check fails and is covered by
   its own tests; the 8-ball conformance test has a timeout that fits its work.

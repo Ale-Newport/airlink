@@ -66,5 +66,11 @@ version their parent depends on. Both are tracked rather than forced:
 | `image-size` 1.x | Metro (the React Native bundler) | The fix exists only in 2.x, whose API Metro does not use | Build machine only; it reads this repository's own images |
 | `decode-uri-component` 0.2.x | React Navigation → `query-string` 7 | The fix exists only in ESM-only 0.5.x, which a CommonJS parent cannot load | Deep-link parsing only; AirLink registers no URL scheme and gives React Navigation no linking config, so no outside URL reaches it |
 
-They will be removed as soon as the parents move. All other advisories are
+Dependabot also reports `activesupport` and `concurrent-ruby` advisories in
+`apps/mobile/Gemfile`, the React Native template's CocoaPods toolchain. The
+patched releases need Ruby 3.2+, while the Gemfile still supports the Ruby 2.6
+that macOS ships, so they are left until the Gemfile's floor is raised. They run
+only on a build machine, against this repository's own Podfile.
+
+They will be removed as soon as the parents move. All other npm advisories are
 patched through `pnpm-workspace.yaml` overrides.

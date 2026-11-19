@@ -78,7 +78,8 @@ if (LOG_FILE) {
   console.log = (...parts: unknown[]): void => {
     print(...parts);
     // eslint-disable-next-line no-control-regex
-    appendFileSync(LOG_FILE, `${parts.join(' ').replace(/\x1b\[[0-9;]*m/g, '')}\n`);
+    // One record per line: a CR or LF inside a part could forge a log entry.
+    appendFileSync(LOG_FILE, `${parts.join(' ').replace(/\x1b\[[0-9;]*m/g, '').replace(/[\r\n]+/g, ' ')}\n`);
   };
 }
 
@@ -302,7 +303,8 @@ const router = new IncomingLinkRouter<PeerSession>({
 function onRadioMessage(message: Record<string, unknown>): void {
   switch (message.op) {
     case 'log':
-      console.log(String(message.line));
+      // The radio helper is another process; keep each of its lines one line.
+      console.log(String(message.line).replace(/[\r\n]+/g, ' '));
       break;
     case 'open': {
       results.linksOpened += 1;

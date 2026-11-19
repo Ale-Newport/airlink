@@ -52,6 +52,20 @@ describe('byte helpers', () => {
     expect(fromBase64(toBase64(data))).toEqual(data);
   });
 
+  it('strips base64 padding exactly as before, in linear time', () => {
+    for (const len of [0, 1, 2, 3, 4, 5, 31, 32, 33]) {
+      const data = new Uint8Array(len).map((_, i) => (i * 37) & 0xff);
+      expect(fromBase64(toBase64(data))).toEqual(data);
+      expect(fromBase64(toBase64(data).replace(/=+$/, ''))).toEqual(data);
+    }
+    // A long run of '=' followed by another character used to take quadratic
+    // time in a /=+$/ regex. Now it is rejected at once, as an invalid character.
+    const hostile = '='.repeat(200_000) + '!';
+    const started = Date.now();
+    expect(() => fromBase64(hostile)).toThrow('base64: invalid character');
+    expect(Date.now() - started).toBeLessThan(500);
+  });
+
   it('round-trips UTF-8 including astral characters', () => {
     for (const s of ['', 'hola', 'Did you bring the headphones?', 'Yes 😭', '日本語テスト', 'é']) {
       expect(utf8Decode(utf8Encode(s))).toBe(s);

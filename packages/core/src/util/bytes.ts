@@ -82,7 +82,11 @@ function b64Encode(bytes: Uint8Array, alphabet: string, pad: boolean): string {
 function b64Decode(str: string, alphabet: string): Uint8Array {
   const lookup = new Int16Array(128).fill(-1);
   for (let i = 0; i < alphabet.length; i++) lookup[alphabet.charCodeAt(i)] = i;
-  const clean = str.replace(/=+$/, '');
+  // Strip trailing padding with a loop, not /=+$/: that regex is quadratic on a
+  // long run of '=' followed by anything else, and base64 arrives from peers.
+  let end = str.length;
+  while (end > 0 && str.charCodeAt(end - 1) === 61 /* '=' */) end--;
+  const clean = end === str.length ? str : str.slice(0, end);
   const out = new Uint8Array(Math.floor((clean.length * 6) / 8));
   let bits = 0;
   let value = 0;
