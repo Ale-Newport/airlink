@@ -47,7 +47,10 @@ async function run(remoteInstall: string) {
 
   fakeAuthenticated(outbound, remoteInstall);
   outbound.session.events.emit('stateChanged', { state: ConnectionState.CONNECTED });
-  await new Promise<void>((r) => setTimeout(r, 10));
+  // Closing the loser is asynchronous; wait for it rather than for a guess.
+  for (let waited = 0; waited < 2000 && closed.length === 0; waited += 10) {
+    await new Promise<void>((r) => setTimeout(r, 10));
+  }
 
   return {
     weInitiate,

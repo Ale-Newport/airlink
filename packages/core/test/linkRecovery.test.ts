@@ -115,3 +115,47 @@ describe('a first meeting whose link dies mid-ceremony', () => {
     expect(a.state).toBe(ConnectionState.CONNECTED);
   });
 });
+
+describe('a message that runs out of attempts', () => {
+  /**
+   * The reliable channel used to delete a record after its eighth attempt and
+   * tell nobody on the far side, whose in-order watermark then waited for that
+   * sequence number for the rest of the session: everything sent afterwards -
+   * chat, game moves, invitations - sat undelivered in its reorder buffer.
+   */
+  it('does not wedge the channel: everything sent before and after arrives, in order', async () => {
+    const { clock, network, a, b, tA } = await pair(true);
+    expect(a.state).toBe(ConnectionState.CONNECTED);
+
+    const got: string[] = [];
+    b.events.on('message', (m) => {
+      if (m.type === MessageType.MESSAGE) got.push((m.value as { t: string }).t);
+    });
+    const failed: number[] = [];
+    a.events.on('deliveryFailed', ({ seq }) => failed.push(seq));
+
+    a.sendReliable(MessageType.MESSAGE, { t: 'before' });
+    await clock.advanceAsync(1000);
+
+    // An outage the link layer does not report: the link stays "connected".
+    network.setConditions({ reliableLossRate: 1, realtimeLossRate: 1 });
+    a.sendReliable(MessageType.MESSAGE, { t: 'during' });
+    for (let t = 0; t < 40_000 && failed.length === 0; t += 50) await clock.advanceAsync(50);
+    expect(failed).toHaveLength(1); // still reported, once, so the app can react
+    network.setConditions({ reliableLossRate: 0, realtimeLossRate: 0 });
+
+    // Recovery on whatever link the session ends up on.
+    if (a.state === ConnectionState.RECONNECTING) {
+      const pending = tA.connect('endpoint-b');
+      await clock.advanceAsync(200);
+      a.migrateToLink(await pending);
+      await clock.advanceAsync(500);
+    }
+    a.sendReliable(MessageType.MESSAGE, { t: 'after-1' });
+    a.sendReliable(MessageType.MESSAGE, { t: 'after-2' });
+    await clock.advanceAsync(30_000);
+
+    expect(got).toEqual(['before', 'during', 'after-1', 'after-2']);
+    expect(a.state).toBe(ConnectionState.CONNECTED);
+  });
+});

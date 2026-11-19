@@ -37,6 +37,8 @@ export interface OutboundRecord {
   lastSentAt: number;
   /** Set when a retransmission makes the RTT sample ambiguous (Karn's algorithm). */
   rttAmbiguous: boolean;
+  /** onDeliveryFailed has been called for this record. It is said once. */
+  failureReported?: boolean;
 }
 
 export interface ReliabilityCallbacks {
@@ -44,8 +46,18 @@ export interface ReliabilityCallbacks {
   readonly transmit: (record: OutboundRecord, isRetransmit: boolean) => void;
   /** The peer confirmed receipt. */
   readonly onAcknowledged: (seq: number, rttMs: number | null) => void;
-  /** Gave up after maxAttempts. The session is presumed dead. */
+  /**
+   * A packet used up its attempts. Reported once per record; the record is
+   * KEPT and resent when the channel resumes, because dropping it would leave
+   * a gap the receiver can never close (see onTimeout).
+   */
   readonly onDeliveryFailed: (record: OutboundRecord) => void;
+  /**
+   * The channel ran out of attempts and has paused itself. The link is
+   * presumed dead; the owner should treat it the way it treats silence, and
+   * call resume() once the link is shown to work or is replaced.
+   */
+  readonly onExhausted?: () => void;
 }
 
 export interface ReliabilityOptions {
@@ -215,7 +227,9 @@ export class ReliableChannel {
     for (const record of this.unacked.values()) {
       record.rttAmbiguous = true;
       record.lastSentAt = this.clock.now();
-      record.attempts += 1;
+      // A fresh link gets a fresh budget. Counting on from the old one meant a
+      // record could arrive on a new link already one try from giving up.
+      record.attempts = 1;
       this.callbacks.transmit(record, true);
     }
     this.pump();
@@ -274,9 +288,24 @@ export class ReliableChannel {
       this.callbacks.transmit(record, true);
     }
 
-    for (const record of failed) {
-      this.unacked.delete(record.seq);
-      this.callbacks.onDeliveryFailed(record);
+    if (failed.length > 0) {
+      /*
+       * Out of attempts. The record used to be deleted here, and the receiver
+       * was never told: its in-order watermark stayed one short of the gap for
+       * the life of the session, so every later message, move and invite sat
+       * in its reorder buffer undelivered - while selective acks made them look
+       * delivered on this side. Nothing can skip a sequence number the other
+       * side is waiting for, so the record stays, and the channel pauses until
+       * the link is shown to work again (resume() resends it with fresh tries).
+       */
+      for (const record of failed) {
+        if (record.failureReported) continue;
+        record.failureReported = true;
+        this.callbacks.onDeliveryFailed(record);
+      }
+      this.pause();
+      this.callbacks.onExhausted?.();
+      return;
     }
     this.scheduleTimer();
   }

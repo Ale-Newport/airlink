@@ -190,6 +190,7 @@ export class PeerSession {
       onDeliveryFailed: (record) => {
         this.events.emit('deliveryFailed', { seq: record.seq, messageType: record.messageType });
       },
+      onExhausted: () => this.handleChannelExhausted(),
     });
 
     this.bulk = new ReliableChannel(
@@ -200,6 +201,7 @@ export class PeerSession {
         onDeliveryFailed: (record) => {
           this.events.emit('deliveryFailed', { seq: record.seq, messageType: record.messageType });
         },
+        onExhausted: () => this.handleChannelExhausted(),
       },
       { windowSize: 16 },
     );
@@ -1085,6 +1087,25 @@ export class PeerSession {
       this.bulk.pause();
       this.stateMachine.transitionTo(ConnectionState.RECONNECTING, 'peer stopped responding');
     }, Math.max(1000, Math.floor(timeout / 3)));
+  }
+
+  /**
+   * A reliable channel ran out of attempts: the link is presumed dead. Treated
+   * exactly like the liveness timer firing - RECONNECTING, keepalives still
+   * knocking on the open link - so the session either recovers on it
+   * (handleSecureFrame) or is moved to a new one, and the kept records go out
+   * again either way.
+   */
+  private handleChannelExhausted(): void {
+    if (this.closed || this.state !== ConnectionState.CONNECTED) return;
+    this.log.warn('a reliable message ran out of attempts; treating the link as lost');
+    if (this.livenessTimer !== undefined) {
+      this.options.clock.clearInterval(this.livenessTimer);
+      this.livenessTimer = undefined;
+    }
+    this.reliable.pause();
+    this.bulk.pause();
+    this.stateMachine.transitionTo(ConnectionState.RECONNECTING, 'delivery attempts exhausted');
   }
 
   private sendKeepalive(): void {
