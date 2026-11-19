@@ -7,6 +7,45 @@ marketing version.
 
 ## [Unreleased]
 
+### Fixed
+
+- **Both people tapping Connect** no longer destroys both sessions: dial ties
+  are decided by a direction recorded when each attempt starts, and the winning
+  session can always be found again.
+- **The reliable stream can no longer wedge.** A message that ran out of
+  attempts used to be dropped, leaving the receiver waiting for it for the rest
+  of the session while everything after it sat undelivered.
+- **A link that goes quiet and recovers is used again** instead of carrying
+  nothing until a new dial replaced it.
+- **A six-digit check whose link dies** redials and resumes, instead of
+  hanging for two minutes with Connect refusing to dial; and moving it to a new
+  link no longer marks it connected before both people confirm.
+- **Games:** a guest's input sent just before a host snapshot is no longer
+  dropped as a duplicate (Pong paddles that never stopped, moves that vanished
+  after a reconnect); a late snapshot can no longer wind a realtime game back
+  (#6); the host pauses a realtime game while the link is down; Pool's table
+  repaints after the host's shot; "Try again" invitations are shown again; and a
+  stale "No" can no longer end a game in progress.
+- **iOS radio:** late L2CAP channels are no longer adopted by the wrong link,
+  iPhone friends' tokens are re-read so they are recognised over Bluetooth
+  alone, and peers that left no longer stay on the Wi-Fi list after the Bonjour
+  browser restarts.
+- Docs use the shipped game names (#1); Code Breaker's styles and five other
+  lint warnings cleaned up (#2, #3); `gradlew.bat` no longer shows as modified
+  in fresh clones.
+
+### Added
+
+- A bit-for-bit golden test of the pool physics across 50 games (#5).
+- Regression tests for every fix above, each shown to fail on the old code.
+- Dependabot patch and minor updates arm auto-merge; they still need CI and
+  the code owner's approval.
+
+### Changed
+
+- Removed AI co-author trailers from the commit history. Trees, authors and
+  dates are unchanged; v1.0.0 points at the same content.
+
 ## [1.0.0] - 2026-11-19
 
 The first public release: two phones with no signal, no Wi-Fi and no server can

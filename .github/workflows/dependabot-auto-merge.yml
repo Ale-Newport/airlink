@@ -1,0 +1,30 @@
+name: Dependabot auto-merge
+
+# Arms auto-merge on Dependabot's patch and minor updates. It does NOT approve
+# anything and cannot bypass the branch ruleset: the pull request still needs
+# every required check to pass AND the code owner's approval. Once both are
+# there, GitHub merges it without a second visit. Major updates are left for a
+# person to merge by hand.
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  arm:
+    if: github.event.pull_request.user.login == 'dependabot[bot]' && github.repository == 'Ale-Newport/airlink'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - id: meta
+        uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98 # v3.1.0
+      - name: Enable auto-merge for patch and minor updates
+        if: steps.meta.outputs.update-type == 'version-update:semver-patch' || steps.meta.outputs.update-type == 'version-update:semver-minor'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: gh pr merge --auto --squash "$PR_URL"
