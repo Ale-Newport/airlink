@@ -177,7 +177,7 @@ says "not connected":
 | Disconnect mid-game | partition during a game session |
 | Transport change | `migrateToLink` while messages are in flight |
 | Malformed packets | fuzz tests |
-| A cheating peer | Battleship commit-reveal, forged game actions |
+| A cheating peer | Fleet Hunt commit-reveal, forged game actions |
 
 ---
 
@@ -296,7 +296,7 @@ block.
     those exact words.
 11. B declines. A is told promptly, and does not sit out the full window.
 12. A invites again and B accepts. Both open the same board.
-13. Play Tic-Tac-Toe, then Chess, then Connect Four, then Battleship, then
+13. Play Tic-Tac-Toe, then Chess, then Four in a Row, then Fleet Hunt, then
     Trivia, then Reaction, then Draw & Guess, then Word Duel. Both boards agree
     at every move.
 14. **Inside a game**, drag a finger up and down the middle of the board, and

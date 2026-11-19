@@ -5,7 +5,7 @@ Twenty-eight games, all real, all playable between two phones with no server.
 | Shelf | Games |
 |---|---|
 | **Quick** | Reaction · Tic-Tac-Toe · Rock Paper Scissors · Tap Race · Quick Math · Darts |
-| **Strategy** | Chess · Connect Four · Battleship · Gomoku · Reversi · Dots & Boxes |
+| **Strategy** | Chess · Four in a Row · Fleet Hunt · Gomoku · Reversi · Dots & Boxes |
 | **Words** | Word Duel · Word Chain |
 | **Trivia** | Trivia · Flag Duel · Capital Duel · Geography Duel |
 | **Puzzles** | Code Breaker · Memory Duel · Sliding Puzzle Race |
@@ -134,7 +134,7 @@ behalf by putting a different id in the payload.
 
 ### Turn-based
 
-Chess, Connect Four, Battleship, Tic-Tac-Toe, Trivia, Word Duel, Darts,
+Chess, Four in a Row, Fleet Hunt, Tic-Tac-Toe, Trivia, Word Duel, Darts,
 Reaction, Draw & Guess.
 
 Only **actions** travel. Every device replays the same ordered action log
@@ -192,7 +192,7 @@ stricter for peers than for ourselves. It costs one CBOR round-trip per move.
 
 ## 5. Two games worth reading
 
-### Battleship — hiding a fleet from a shared reducer
+### Fleet Hunt (`battleship`) — hiding a fleet from a shared reducer
 
 Both devices run the same reducer over the same state, so a fleet cannot simply
 be kept in the state: the opponent's device would hold it. The game uses

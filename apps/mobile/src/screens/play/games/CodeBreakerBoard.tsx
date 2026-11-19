@@ -211,7 +211,7 @@ export function CodeBreakerBoard({
     // unreadable, but the composer, the palette and the button sat outside that
     // cap and took the whole window - so on anything wider than a phone a
     // 380pt board had a full-width row of swatches sprawling underneath it.
-    <View style={{ width: boardW, alignSelf: 'center' }}>
+    <View style={[styles.centred, { width: boardW }]}>
       <PlayerBar
         players={players}
         local={local}
@@ -227,7 +227,7 @@ export function CodeBreakerBoard({
       <View style={{ height: theme.spacing.md }} />
 
       <BoardSurface size={boardW}>
-        <View style={{ flexDirection: 'row', gap: colGap }}>
+        <View style={[styles.row, { gap: colGap }]}>
           <History
             attempts={mine}
             who={playText.room.you}
@@ -270,7 +270,7 @@ export function CodeBreakerBoard({
           {/* The four slots, filled from the left by the palette below and
               emptied by tapping one. Two ways in - cycle a slot, or pick a
               colour - would each be half-learned; one way is learned once. */}
-          <View style={{ flexDirection: 'row', gap: theme.spacing.sm, height: SLOTS_H, alignItems: 'center' }}>
+          <View style={[styles.rowCentred, { gap: theme.spacing.sm, height: SLOTS_H }]}>
             {draft.map((peg, index) => (
               <Pressable
                 key={index}
@@ -310,7 +310,7 @@ export function CodeBreakerBoard({
               go dead only on a full draft, which the hint under the button
               says out loud - a disabled control's accessibilityHint is not
               announced, so it cannot be the only place that is written. */}
-          <View style={{ flexDirection: 'row', gap: theme.spacing.xs }}>
+          <View style={[styles.row, { gap: theme.spacing.xs }]}>
             {pegColours.map((colour, index) => (
               <Pressable
                 key={index}
@@ -339,7 +339,7 @@ export function CodeBreakerBoard({
               >
                 <Label
                   variant="caption"
-                  style={{ fontWeight: '700', color: inkOn(colour, theme) }}
+                  style={[styles.bold, { color: inkOn(colour, theme) }]}
                 >
                   {playText.codeBreaker.peg[index] ?? ''}
                 </Label>
@@ -418,7 +418,7 @@ function History({
   return (
     // Hidden overflow rather than a scroll view: a rounding error must be
     // clipped, never allowed to push the scene into scrolling.
-    <View style={{ width: columnWidth, overflow: 'hidden' }}>
+    <View style={[styles.clipped, { width: columnWidth }]}>
       <Label variant="caption" tone="tertiary" numberOfLines={1}>
         {who}
       </Label>
@@ -445,14 +445,14 @@ function History({
                     attempt.colour,
                   )
             }
-            style={{ height: rowHeight, flexDirection: 'row', alignItems: 'center' }}
+            style={[styles.rowCentred, { height: rowHeight }]}
           >
             {numberWidth > 0 ? (
               <Label variant="caption" tone="tertiary" style={{ width: numberWidth }}>
                 {playText.codeBreaker.guessNumber(index + 1)}
               </Label>
             ) : null}
-            <View style={{ flexDirection: 'row', gap: pegGap, flex: 1 }}>
+            <View style={[styles.rowFill, { gap: pegGap }]}>
               {Array.from({ length: codeLength }, (_unusedPeg, slot) => {
                 const peg = attempt === null ? null : attempt.guess[slot] ?? null;
                 return (
@@ -510,7 +510,7 @@ function Feedback({
     <View
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
-      style={{ flexDirection: 'row', gap, marginLeft: gap }}
+      style={[styles.row, { gap, marginLeft: gap }]}
     >
       {Array.from({ length: total }, (_unused, index) => {
         const solid = !faded && index < exact;
@@ -541,7 +541,7 @@ function Feedback({
         // gap, so the four places always line up down the column, and solid
         // rather than another ring so it cannot be mistaken for a colour match.
         return (
-          <View key={index} style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
+          <View key={index} style={[styles.centredContent, { width: size, height: size }]}>
             <View
               style={{
                 width: Math.max(2, size * 0.34),
@@ -571,7 +571,7 @@ function Legend(): React.JSX.Element {
     <View
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
-      style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: theme.spacing.sm }}
+      style={[styles.rowCentredContent, { gap: theme.spacing.sm }]}
     >
       <View
         style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: theme.colors.text }}
@@ -581,13 +581,7 @@ function Legend(): React.JSX.Element {
       </Label>
       <View style={{ width: theme.spacing.xs }} />
       <View
-        style={{
-          width: size,
-          height: size,
-          borderRadius: size / 2,
-          borderWidth: 2,
-          borderColor: theme.colors.text,
-        }}
+        style={[styles.ring, { width: size, height: size, borderRadius: size / 2, borderColor: theme.colors.text }]}
       />
       <Label variant="caption" tone="tertiary">
         {playText.codeBreaker.colourLegend}
@@ -612,12 +606,12 @@ function Reveal({
     <View
       accessible
       accessibilityLabel={playText.codeBreaker.codeIs(playText.codeBreaker.pegList(letters))}
-      style={{ alignItems: 'center', gap: theme.spacing.sm }}
+      style={[styles.column, { gap: theme.spacing.sm }]}
     >
       <Label variant="caption" tone="tertiary">
         {playText.codeBreaker.theCode}
       </Label>
-      <View style={{ flexDirection: 'row', gap: theme.spacing.sm }}>
+      <View style={[styles.row, { gap: theme.spacing.sm }]}>
         {secret.map((peg, index) => (
           <Peg key={index} size={size} colour={colours[peg] ?? null} letter={letters[index] ?? null} />
         ))}
@@ -643,21 +637,22 @@ function Peg({
     <View
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
-      style={{
-        width: size,
-        height: size,
-        borderRadius: size / 2,
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: colour ?? theme.colors.surfaceElevated,
-        borderWidth: colour === null ? StyleSheet.hairlineWidth : 0,
-        borderColor: theme.colors.separator,
-      }}
+      style={[
+        styles.centredContent,
+        {
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          backgroundColor: colour ?? theme.colors.surfaceElevated,
+          borderWidth: colour === null ? StyleSheet.hairlineWidth : 0,
+          borderColor: theme.colors.separator,
+        },
+      ]}
     >
       {colour === null || letter === null || size < MIN_LETTERED_PEG ? null : (
         <Label
           variant="caption"
-          style={{ fontSize, lineHeight: fontSize + 2, fontWeight: '700', color: inkOn(colour, theme) }}
+          style={[styles.bold, { fontSize, lineHeight: fontSize + 2, color: inkOn(colour, theme) }]}
         >
           {letter}
         </Label>
@@ -694,3 +689,17 @@ function inkOn(colour: string, theme: Theme): string {
 if (__DEV__ && PEG_KEYS.length !== CODE_COLOURS) {
   throw new Error(`CodeBreakerBoard: ${PEG_KEYS.length} peg colours for ${CODE_COLOURS} code colours`);
 }
+
+/** The fixed parts of the board's layout. Sizes come from the measured board and stay inline. */
+const styles = StyleSheet.create({
+  centred: { alignSelf: 'center' },
+  row: { flexDirection: 'row' },
+  rowCentred: { flexDirection: 'row', alignItems: 'center' },
+  rowCentredContent: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+  rowFill: { flexDirection: 'row', flex: 1 },
+  column: { alignItems: 'center' },
+  centredContent: { alignItems: 'center', justifyContent: 'center' },
+  clipped: { overflow: 'hidden' },
+  bold: { fontWeight: '700' },
+  ring: { borderWidth: 2 },
+});

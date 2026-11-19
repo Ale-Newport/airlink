@@ -6,7 +6,6 @@
  * tests can use it without `any`. None of it exists at runtime in the app.
  */
 declare global {
-  // eslint-disable-next-line no-var
   var __airlinkNativeTest:
     | {
         emit: (event: string, payload: unknown) => void;
@@ -16,11 +15,8 @@ declare global {
         clearCalls: () => void;
       }
     | undefined;
-  // eslint-disable-next-line no-var
   var __airlinkKeychainTest: { clear: () => void; size: () => number } | undefined;
-  // eslint-disable-next-line no-var
   var __airlinkSqliteTest: { clear: () => void } | undefined;
-  // eslint-disable-next-line no-var
   var __airlinkFsTest:
     | {
         copies: () => { from: string; to: string }[];

@@ -444,7 +444,7 @@ function IconSheet(): React.JSX.Element {
  * screen is being read. The props are three primitives, so the comparison is
  * free and every existing line bails out before rendering.
  */
-const LogRow = React.memo(function LogRow({
+const LogRow = React.memo(function LogRowView({
   at,
   text,
   bad,

@@ -24,7 +24,6 @@ jest.mock('react-native/Libraries/Modal/Modal', () => ({
   __esModule: true,
   default: (props: { visible?: boolean; onDismiss?: () => void; children?: React.ReactNode }): React.ReactNode => {
     mockModalDismissed = props.onDismiss;
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { View } = require('react-native');
     return props.visible ? <View>{props.children}</View> : null;
   },

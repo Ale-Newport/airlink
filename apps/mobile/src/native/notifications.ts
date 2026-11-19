@@ -123,8 +123,8 @@ async function consumeInitialOpen(): Promise<void> {
     const parsed: unknown = JSON.parse(json);
     if (typeof parsed !== 'object' || parsed === null) return;
     const record = parsed as Record<string, unknown>;
-    const threadId = record['threadId'];
-    const data = record['data'];
+    const threadId = record.threadId;
+    const data = record.data;
     if (typeof threadId !== 'string' || threadId.length === 0) return;
     deliver({ threadId, data: parseData(typeof data === 'string' ? data : '') });
   } catch {
