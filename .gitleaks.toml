@@ -1,0 +1,13 @@
+# gitleaks configuration: the default rules, plus allowlists for findings that
+# have been reviewed and are not secrets. Keep every entry narrow and explained.
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "CocoaPods checksums are content hashes of public pods, not credentials"
+paths = ['''apps/mobile/ios/Podfile\.lock''']
+
+[[allowlists]]
+description = "Fake 6-byte advertisement tokens used as test fixtures"
+paths = ['''apps/mobile/__tests__/.*\.test\.tsx?''']
+regexes = ['''token: 'a1b2c3d4e5f6'''']

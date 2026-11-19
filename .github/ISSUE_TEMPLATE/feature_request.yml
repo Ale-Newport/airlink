@@ -1,0 +1,41 @@
+name: Feature request
+description: Suggest something new for AirLink.
+title: "[Feature]: "
+labels: ["enhancement", "needs triage"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+      description: Describe the situation, e.g. "on a long flight with a friend, I want to…"
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like to happen?
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Chat
+        - Games
+        - File sharing
+        - Watch together
+        - Connecting / pairing
+        - Privacy and security
+        - Something else
+  - type: textarea
+    id: constraints
+    attributes:
+      label: Does it work offline, over Bluetooth's ~5–40 KB/s?
+      description: Everything in AirLink must work with no internet. It is fine not to know; say what you think.
+  - type: checkboxes
+    id: help
+    attributes:
+      label: Contribution
+      options:
+        - label: I would like to work on this myself

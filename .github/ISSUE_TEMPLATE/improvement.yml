@@ -1,0 +1,31 @@
+name: Improvement
+description: Make something that already exists better (performance, docs, accessibility, code quality).
+title: "[Improvement]: "
+labels: ["improvement", "needs triage"]
+body:
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Kind of improvement
+      options:
+        - Performance
+        - Accessibility
+        - Documentation
+        - Code quality / refactor
+        - Tests
+        - Developer experience / CI
+    validations:
+      required: true
+  - type: textarea
+    id: current
+    attributes:
+      label: What is there today, and what is wrong with it?
+      description: Link to files or lines where you can.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would be better?
+    validations:
+      required: true

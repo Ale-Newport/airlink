@@ -25,3 +25,33 @@ apps/mobile/android/local.properties
 # Metro / RN
 .metro-health-check*
 apps/mobile/.expo/
+
+# Secrets and signing material: never committed.
+.env
+.env.*
+!.env.example
+*.p8
+*.p12
+*.pem
+*.cer
+*.mobileprovision
+*.provisionprofile
+*.jks
+apps/mobile/android/keystore.properties
+*.ipa
+*.xcarchive
+*.dSYM.zip
+
+# Generated
+demo/dist/
+.eslintcache
+*.tsbuildinfo
+
+# Raw screen recordings are ~100 MB; the trimmed demo lives in docs/media/.
+/ScreenRecording_*.mp4
+
+# Editors
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp

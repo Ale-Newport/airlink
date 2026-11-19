@@ -1,0 +1,10 @@
+# Every path in this repository is owned by the maintainer. The branch ruleset
+# requires a code-owner approval on every pull request, so nothing from anyone
+# else is merged without @Ale-Newport reviewing it.
+* @Ale-Newport
+
+# Named explicitly so a future, narrower rule above cannot accidentally hand
+# these to someone else: CI, ownership, and the cryptography.
+/.github/            @Ale-Newport
+/packages/core/src/crypto/   @Ale-Newport
+/packages/core/src/pairing/  @Ale-Newport

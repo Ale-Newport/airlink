@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Refuse a commit that adds a secret. Installed by scripts/install-hooks.sh.
+# Uses gitleaks (brew install gitleaks) with the repository's .gitleaks.toml.
+set -euo pipefail
+if ! command -v gitleaks >/dev/null 2>&1; then
+  echo "pre-commit: gitleaks is not installed, so staged changes were not scanned for secrets." >&2
+  echo "            Install it with: brew install gitleaks" >&2
+  exit 0
+fi
+exec gitleaks git --pre-commit --staged --redact --no-banner --config "$(git rev-parse --show-toplevel)/.gitleaks.toml"

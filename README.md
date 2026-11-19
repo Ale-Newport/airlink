@@ -1,11 +1,26 @@
 <div align="center">
 
+<img src="docs/media/demo.gif" alt="AirLink running on an iPhone in airplane mode: it finds a nearby phone, confirms a six-digit pairing code, chats, sends a photo and plays tic-tac-toe" width="300">
+
 # AirLink
 
-**Together, even when you're offline.**
+**Chat, play games, share files and watch videos together on two phones, with no signal, no Wi-Fi and no server.**
 
-Two phones. No signal, no Wi-Fi, no server.
-Chat, play, share files and watch a film in sync — over Bluetooth and local Wi-Fi.
+[![CI](https://github.com/Ale-Newport/airlink/actions/workflows/ci.yml/badge.svg)](https://github.com/Ale-Newport/airlink/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/Ale-Newport/airlink/actions/workflows/codeql.yml/badge.svg)](https://github.com/Ale-Newport/airlink/actions/workflows/codeql.yml)
+[![Release](https://img.shields.io/github/v/release/Ale-Newport/airlink?sort=semver)](https://github.com/Ale-Newport/airlink/releases/latest)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+<br>
+![iOS](https://img.shields.io/badge/iOS-18%2B-000?logo=apple)
+![Android](https://img.shields.io/badge/Android-7%2B-3DDC84?logo=android&logoColor=white)
+![React Native](https://img.shields.io/badge/React%20Native-0.87-61DAFB?logo=react&logoColor=black)
+![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
+![Tests](https://img.shields.io/badge/tests-1%2C700%2B-brightgreen)
+
+**[▶ Live demo: run the real protocol in your browser](https://ale-newport.github.io/airlink/)** ·
+[How it works](#how-it-is-built) ·
+[Security](#security) ·
+[Contributing](CONTRIBUTING.md)
 
 </div>
 
@@ -28,6 +43,14 @@ not as a fallback, not for sign-in, not for anything.
 | 🎬 **Sync** | Watch the same local video in step, to within tens of milliseconds |
 | 🔒 **Private** | End-to-end encrypted, no account, nothing leaves the device |
 | ✈️ **Offline** | Designed for airplane mode, not merely tolerant of it |
+
+<p align="center">
+  <img src="docs/app-store-screenshots/1-no-signal-no-problem.png" alt="Welcome screen: no signal, no Wi-Fi, no problem" width="160">
+  <img src="docs/app-store-screenshots/2-private-by-construction.png" alt="Both phones show the same six-digit code at first meeting" width="160">
+  <img src="docs/app-store-screenshots/3-chat-with-photos.png" alt="Chat with a photo sent with zero bars of signal" width="160">
+  <img src="docs/app-store-screenshots/4-games-to-play-together.png" alt="The Play shelf of two-player games" width="160">
+  <img src="docs/app-store-screenshots/5-play-face-to-face.png" alt="Four in a Row, halfway through" width="160">
+</p>
 
 ---
 
@@ -57,12 +80,29 @@ Details and sources: [`docs/TRANSPORTS.md`](docs/TRANSPORTS.md).
 
 ## Getting started
 
+### Try it in one command, no phone needed
+
 ```bash
-# Requires Node 22+, pnpm, Xcode 26+ for iOS, JDK 17 + Android SDK for Android
+git clone https://github.com/Ale-Newport/airlink.git && cd airlink && npx -y pnpm@10 install && npx -y pnpm@10 harness
+```
+
+That runs the real protocol between two simulated phones: handshake, packet
+loss, a dropped link, a Bluetooth-to-Wi-Fi switch mid-conversation and a
+100 KB transfer over a 180-byte MTU. It prints a PASS for each check. The same
+code runs in the [live demo](https://ale-newport.github.io/airlink/).
+
+### Develop
+
+```bash
+# Requires Node 22+ and pnpm 10; Xcode 26+ for iOS; JDK 17 + Android SDK for Android
 pnpm install
 
-pnpm test            # ~1500 tests, no phone required
+pnpm test            # ~1,500 protocol, crypto, game and database tests, no phone required
 pnpm typecheck
+pnpm lint
+pnpm harness         # the network harness above
+pnpm demo:build      # the live demo, into demo/dist
+./scripts/install-hooks.sh   # optional: scan every commit for secrets with gitleaks
 ```
 
 ### iOS
@@ -169,7 +209,7 @@ rather than hidden.
 ## Games
 
 **Strategy** Chess (full rules — castling, en passant, promotion, fifty-move,
-repetition, insufficient material) · Connect Four · Battleship · Gomoku ·
+repetition, insufficient material) · Four in a Row · Fleet Hunt · Gomoku ·
 Reversi · Dots & Boxes
 **Quick** Reaction · Tic-Tac-Toe · Rock Paper Scissors · Tap Race · Quick Math · Darts
 **Words** Word Duel · Word Chain
@@ -191,7 +231,7 @@ game declares its latency sensitivity, and on a slow link the ones that will
 feel good come first while the ones that will not are marked *Best over Wi-Fi* —
 reordered and labelled, never hidden.
 
-Battleship is worth a look: since both devices run the same reducer, a fleet
+Fleet Hunt (a battleship-style game) is worth a look: since both devices run the same reducer, a fleet
 cannot simply be kept in shared state, so it uses commit-reveal with cheat
 detection at the end. Rock Paper Scissors uses the same idea for the same
 reason. [`docs/GAMES.md`](docs/GAMES.md).
@@ -230,3 +270,18 @@ iPhone and Android both open AirLink
 ```
 
 That is the product.
+
+---
+
+## Contributing
+
+Contributions are welcome, and most of the codebase can be worked on without a
+phone. Start with [CONTRIBUTING.md](CONTRIBUTING.md), pick a
+[`good first issue`](https://github.com/Ale-Newport/airlink/labels/good%20first%20issue),
+or ask in [Discussions](https://github.com/Ale-Newport/airlink/discussions).
+Please report security problems privately, as described in
+[SECURITY.md](SECURITY.md).
+
+## License
+
+[MIT](LICENSE) © Alejandro Newport Diaz

@@ -1,0 +1,58 @@
+name: Bug report
+description: Something in AirLink does not work the way it should.
+title: "[Bug]: "
+labels: ["bug", "needs triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time. **Security problems go through a [private report](https://github.com/Ale-Newport/airlink/security/advisories/new), not here.**
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open AirLink on both phones with airplane mode on
+        2. Connect, then send a 5 MB photo
+        3. …
+    validations:
+      required: true
+  - type: dropdown
+    id: pair
+    attributes:
+      label: Which phones were involved?
+      options:
+        - iPhone ↔ iPhone
+        - Android ↔ Android
+        - iPhone ↔ Android
+        - iPhone + iOS Simulator
+        - Not device-specific (core library, tests, docs)
+    validations:
+      required: true
+  - type: dropdown
+    id: transport
+    attributes:
+      label: How were they connected?
+      options:
+        - Bluetooth only (airplane mode, Bluetooth on)
+        - Same Wi-Fi network
+        - Both / it switched
+        - Not sure
+  - type: input
+    id: versions
+    attributes:
+      label: App version and OS versions
+      placeholder: "AirLink 1.0.0 (9), iOS 26.1 and Android 16"
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or screenshots
+      description: "In the app: You tab, tap the version number seven times to turn on Developer mode, then Developer mode → Copy everything. Remove anything you would not want public."
+      render: text
