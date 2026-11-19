@@ -40,8 +40,11 @@ updates:
       actions:
         patterns: ["*"]
 
-  - package-ecosystem: gradle
-    directory: /apps/mobile/android
-    schedule:
-      interval: monthly
-    labels: ["dependencies", "platform: android"]
+  # Gradle (Android) updates are paused while Android work is postponed: the
+  # Android build has never compiled, so CI cannot verify a bump (issue #4).
+  # Restore this block when #4 lands:
+  # - package-ecosystem: gradle
+  #   directory: /apps/mobile/android
+  #   schedule:
+  #     interval: monthly
+  #   labels: ["dependencies", "platform: android"]
