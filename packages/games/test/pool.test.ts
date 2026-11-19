@@ -679,7 +679,11 @@ describe('pool conformance', () => {
     expect(report.passed).toBe(true);
   });
 
-  it('passes conformance across many seeds', () => {
+  // Every shot is simulated to rest (up to 1800 fixed steps), and the
+  // conformance suite replays each one several times over, so 45 seeds take
+  // 15-25s on a laptop and longer on a shared CI runner. The work is the point
+  // of the test; the package-wide 20s ceiling is not meant for it.
+  it('passes conformance across many seeds', { timeout: 120_000 }, () => {
     for (let seed = 1; seed <= 45; seed++) {
       const report = runConformance(pool, { ...hooks, maxPlies: 60 } as never, seed);
       expect(report.failures).toEqual([]);
