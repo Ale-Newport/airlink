@@ -208,6 +208,37 @@ describe('FileRepository and TransferRepository', () => {
     expect(repos.files.findByHash(new Uint8Array(32).fill(4))).toBeNull();
   });
 
+  it('stores an empty hash even through a driver that binds empty blobs as NULL', () => {
+    // SQLite turns a blob bound with a NULL data pointer into NULL, and a
+    // zero-length buffer often has one: Node 22's node:sqlite binds
+    // new Uint8Array(new ArrayBuffer(0)) that way. An incoming file is stored
+    // with an empty hash before its bytes arrive, against a NOT NULL column.
+    const db = openNodeDatabase();
+    migrate(db);
+    const nullingEmptyBlobs: typeof db = {
+      ...db,
+      exec: (sql) => db.exec(sql),
+      transaction: (fn) => db.transaction(fn),
+      close: () => db.close(),
+      prepare: (sql) => {
+        const statement = db.prepare(sql);
+        const strip = (params: unknown[]) =>
+          params.map((p) => (p instanceof Uint8Array && p.byteLength === 0 ? null : p)) as never[];
+        return {
+          all: (...params) => statement.all(...strip(params)),
+          get: (...params) => statement.get(...strip(params)),
+          run: (...params) => statement.run(...strip(params)),
+        };
+      },
+    };
+    const r = createRepositories(nullingEmptyBlobs);
+    r.files.insert({
+      id: 'incoming', name: 'photo.jpg', mimeType: 'image/jpeg', sizeBytes: 1234,
+      contentHash: new Uint8Array(0), localPath: null, width: null, height: null, durationMs: null, createdAt: NOW,
+    });
+    expect(r.files.get('incoming')?.contentHash).toEqual(new Uint8Array(0));
+  });
+
   it('tracks a resumable transfer', () => {
     addPeer('P1');
     repos.files.insert({

@@ -190,6 +190,16 @@ const numOrNull = (v: Cell): number | null => (v === null || v === undefined ? n
  * boundary, and this tolerates both so a future driver cannot reintroduce a
  * failure that only appears on a device.
  */
+/**
+ * Binds a BLOB that may legitimately be empty (a file hash not known yet, an
+ * action with no payload). SQLite stores a blob bound with a NULL data pointer
+ * as NULL, and a zero-length buffer often has exactly that pointer - Node 22's
+ * node:sqlite does it, and nothing promises a native driver will not. Against a
+ * NOT NULL column that is a constraint failure, so the SQL turns NULL back into
+ * the empty blob it was meant to be.
+ */
+const EMPTY_BLOB_OK = "COALESCE(?, X'')";
+
 function blob(v: Cell): Uint8Array {
   if (v instanceof Uint8Array) return v;
   if (v instanceof ArrayBuffer) return new Uint8Array(v);
@@ -651,7 +661,7 @@ export class FileRepository {
     this.db
       .prepare(
         `INSERT OR REPLACE INTO files (id, name, mime_type, size_bytes, content_hash, local_path, width, height, duration_ms, created_at)
-         VALUES (?,?,?,?,?,?,?,?,?,?)`,
+         VALUES (?,?,?,?,${EMPTY_BLOB_OK},?,?,?,?,?)`,
       )
       .run(
         file.id,
@@ -858,7 +868,7 @@ export class GameRepository {
 
   appendEvent(gameSessionId: string, idx: number, playerPeerId: string, actionSeq: number, payload: Uint8Array, now: number): void {
     this.db
-      .prepare('INSERT OR REPLACE INTO game_events (game_session_id, idx, player_peer_id, action_seq, payload, created_at) VALUES (?,?,?,?,?,?)')
+      .prepare(`INSERT OR REPLACE INTO game_events (game_session_id, idx, player_peer_id, action_seq, payload, created_at) VALUES (?,?,?,?,${EMPTY_BLOB_OK},?)`)
       .run(gameSessionId, idx, playerPeerId, actionSeq, payload, now);
   }
 
@@ -914,7 +924,7 @@ export class SyncRepository {
       .prepare(
         `INSERT INTO sync_sessions (id, conversation_id, host_peer_id, file_id, content_hash, content_name, duration_ms,
                                     state, position_ms, playback_rate, participants_json, created_at, updated_at)
-         VALUES (?,?,?,?,?,?,?,?,?,1.0,?,?,?)`,
+         VALUES (?,?,?,?,${EMPTY_BLOB_OK},?,?,?,?,1.0,?,?,?)`,
       )
       .run(
         input.id, input.conversationId, input.hostPeerId, input.fileId, input.contentHash, input.contentName,
