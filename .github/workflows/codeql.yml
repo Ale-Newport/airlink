@@ -23,11 +23,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # TypeScript is where the protocol and crypto live; Kotlin is the Android
-        # radio layer, analysed without a build; actions covers these workflows.
-        # Swift needs a full Xcode build and is covered by the iOS workflow's
-        # compiler warnings instead.
-        language: [javascript-typescript, java-kotlin, actions]
+        # TypeScript is where the protocol and crypto live; actions covers these
+        # workflows. Kotlin can only be analysed from a compiling Gradle build,
+        # and the Android build has never compiled (issue #4): add java-kotlin
+        # with a build step once it does. Swift likewise needs an Xcode build.
+        language: [javascript-typescript, actions]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

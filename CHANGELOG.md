@@ -77,6 +77,10 @@ video in sync.
 - CI on every push and pull request: typecheck and ~1,700 tests on Node 22 and
   24, ESLint, a dependency audit, a full-history secret scan, CodeQL, and an
   iOS Simulator build.
+- Empty BLOBs (an incoming file's hash before its bytes arrive) are stored as
+  empty rather than failing `NOT NULL` on a driver that binds a zero-length
+  buffer as NULL, as Node 22's `node:sqlite` does. Found by the new Node 22 CI
+  job.
 - Branch rulesets: every outside contribution needs the code owner's approval.
 - The network harness now exits non-zero when a check fails and is covered by
   its own tests; the 8-ball conformance test has a timeout that fits its work.
