@@ -72,6 +72,12 @@ export interface PeerSessionEvents {
     readonly sasCode: string;
     readonly identityKey: Uint8Array;
   };
+  /**
+   * The link carrying this session closed or failed. Emitted in every state;
+   * the one that needs it is PAIRING, which keeps the session (the six-digit
+   * ceremony resumes on a new link) but has no RECONNECTING to announce it.
+   */
+  linkLost: { readonly reason?: string };
   /** A different link is now carrying this session. */
   transportChanged: { readonly from: string | null; readonly to: string; readonly isHighBandwidth: boolean };
   /** A reliable message could not be delivered after every retry. */
@@ -331,7 +337,12 @@ export class PeerSession {
     this.reassembler.reset();
     this.reliable.resume();
     this.bulk.resume();
-    this.stateMachine.transitionTo(ConnectionState.CONNECTED, 'transport migrated');
+    // A first meeting moved to a new link mid-ceremony is still a first
+    // meeting: CONNECTED would tell the app the six digits were compared when
+    // nobody has confirmed them. It stays PAIRING until they are.
+    if (!this.confirmationPending) {
+      this.stateMachine.transitionTo(ConnectionState.CONNECTED, 'transport migrated');
+    }
     this.startKeepalive();
     // Speak at once. The other end of a link it has just been handed cannot
     // know whose it is until a frame arrives naming the session - and with
@@ -550,6 +561,7 @@ export class PeerSession {
     this.reliable.pause();
     this.bulk.pause();
     this.stopKeepalive();
+    this.events.emit('linkLost', reason !== undefined ? { reason } : {});
 
     if (this.secure) {
       // Keys survive: this is a reconnect, not a teardown.
@@ -868,6 +880,25 @@ export class PeerSession {
       return;
     }
 
+    /*
+     * Authenticated traffic on a link we had given up on. The liveness timer
+     * moves to RECONNECTING after ~20 s of silence but leaves the link open -
+     * radio congestion or a briefly suspended peer look exactly like that - and
+     * nothing ever moved back, so a link that recovered carried nothing until a
+     * fresh dial replaced it, which a backgrounded iPhone may never allow. A
+     * packet only our peer could have sealed, arriving on the link we hold, is
+     * proof the link works: pick up where we were.
+     */
+    if (
+      this.state === ConnectionState.RECONNECTING &&
+      this.link?.state === LinkState.CONNECTED
+    ) {
+      this.reliable.resume();
+      this.bulk.resume();
+      this.stateMachine.transitionTo(ConnectionState.CONNECTED, 'link recovered');
+      this.startKeepalive();
+    }
+
     let envelope: Envelope;
     try {
       envelope = decodeEnvelope(plaintext);
@@ -1041,7 +1072,15 @@ export class PeerSession {
     this.livenessTimer = this.options.clock.setInterval(() => {
       if (this.options.clock.now() - this.lastInboundAt <= timeout) return;
       this.log.warn('no traffic from peer within the liveness window');
-      this.stopKeepalive();
+      // Stop judging, but keep knocking. The link is still open, and after a
+      // shared silence BOTH phones end up here: if both also went quiet,
+      // neither would ever send the authenticated packet that proves the link
+      // works again (see handleSecureFrame). Keepalives cost a few bytes and
+      // stop by themselves the moment the link closes.
+      if (this.livenessTimer !== undefined) {
+        this.options.clock.clearInterval(this.livenessTimer);
+        this.livenessTimer = undefined;
+      }
       this.reliable.pause();
       this.bulk.pause();
       this.stateMachine.transitionTo(ConnectionState.RECONNECTING, 'peer stopped responding');

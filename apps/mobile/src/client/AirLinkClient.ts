@@ -11,6 +11,7 @@ import {
   SelfIdentityGuard,
   PairingController,
   IncomingLinkRouter,
+  LinkState,
   PeerSession,
   ReconnectPolicy,
   TIMING,
@@ -191,6 +192,14 @@ export interface PeerHandle {
    */
   migratedAtPackets: number | null;
   readonly startedAt: number;
+  /**
+   * Whether this phone dialled (true) or was dialled (false). Fixed at
+   * creation: `key` cannot answer it, because adoptIdentity renames an
+   * `inbound:` handle onto the peer id - and a dial tie decided from the key
+   * after that rename was decided backwards, on both phones, so each kept the
+   * link the other threw away and both sessions died.
+   */
+  readonly outbound: boolean;
   /** Everything subscribed on behalf of this handle, so it can all be undone. */
   readonly offs: (() => void)[];
 }
@@ -770,6 +779,13 @@ export class AirLinkClient {
     const existing = this.peer(peerKey);
     if (existing) {
       const state = existing.session.state;
+      if (needsLink(existing.session)) {
+        // A six-digit check whose link died: dial a new one under it rather
+        // than reporting "already connected" over a dead link.
+        this.log.info('connect: pairing lost its link; redialling', { peer: shortId(peerKey) });
+        this.scheduleReconnect(existing);
+        return;
+      }
       if (state === ConnectionState.CONNECTED || existing.session.isSecure) {
         this.log.info('connect: already connected', { peer: shortId(peerKey) });
         return;
@@ -865,6 +881,7 @@ export class AirLinkClient {
       aliases: new Set([peerKey]),
       migratedAtPackets: null,
       startedAt: Date.now(),
+      outbound: !peerKey.startsWith('inbound:'),
       offs: [],
     };
     this.peers.set(peerKey, handle);
@@ -919,6 +936,29 @@ export class AirLinkClient {
       if (loser === handle) return;
     }
 
+    /*
+     * The name we are about to take may already be held by a different
+     * attempt for the same person: we dialled a friend (filed under their peer
+     * id) while they dialled us, and their dial finished its handshake first.
+     * That attempt has no peer id of its own yet, so the search above cannot
+     * see it - and taking the name used to overwrite it, orphaning a live
+     * session no map could find. It is a dial tie, so it is decided the way
+     * dial ties are: the phone that should initiate keeps its own dial.
+     */
+    const occupant = this.peers.get(peerId);
+    if (occupant && occupant !== handle && handle.installationId) {
+      const keepOurDial = initiatorWins(this.identity.deviceId, handle.installationId);
+      const keep = handle.outbound === keepOurDial ? handle : occupant;
+      const drop = keep === handle ? occupant : handle;
+      this.log.info('dial tie resolved', {
+        peer: shortId(peerId),
+        kept: shortId(keep.attemptId),
+        dropped: shortId(drop.attemptId),
+      });
+      void this.discardHandle(drop, 'duplicate session for the same peer');
+      if (drop === handle) return;
+    }
+
     if (handle.key !== peerId) {
       handle.aliases.add(handle.key);
       handle.aliases.add(peerId);
@@ -933,6 +973,9 @@ export class AirLinkClient {
       (handle as { key: string }).key = peerId;
       this.peers.set(peerId, handle);
     } else {
+      // Already filed under the peer id - but a rival that finished first may
+      // have taken the slot and since been discarded. Put this one back.
+      this.peers.set(peerId, handle);
       this.registry?.bindIdentity(peerId, { peerId, installationId: handle.installationId });
     }
   }
@@ -955,7 +998,7 @@ export class AirLinkClient {
       // One person, two links. The side that should have initiated keeps its
       // own attempt; the other keeps the one it accepted.
       const weInitiate = initiatorWins(local, remoteA);
-      const aIsOurs = a.key.startsWith('inbound:') === false;
+      const aIsOurs = a.outbound;
       return weInitiate ? (aIsOurs ? b : a) : aIsOurs ? a : b;
     }
     // Fall back to age: the older session has done more work.
@@ -1000,7 +1043,7 @@ export class AirLinkClient {
     const attempt = (): void => {
       // Anything that ended the session ends this too: the handle was replaced,
       // it reconnected on its own, or it was closed.
-      if (this.peers.get(handle.key) !== handle || handle.session.state !== ConnectionState.RECONNECTING) {
+      if (this.peers.get(handle.key) !== handle || !needsLink(handle.session)) {
         this.cancelReconnect(handle);
         return;
       }
@@ -1082,7 +1125,10 @@ export class AirLinkClient {
     // Optional because a handle can be discarded before `start()` has built a
     // registry - a session injected by a test, or a disconnect during launch.
     // Tearing one down must never depend on the radios having come up.
-    if (handle.peerId) this.registry?.setConnected(handle.peerId, false);
+    // Only if nobody else is talking to them: the loser of a dial tie shares
+    // its peer id with the session that won, and must not mark it offline.
+    const survivor = handle.peerId ? this.peers.get(handle.peerId) : undefined;
+    if (handle.peerId && (!survivor || survivor === handle)) this.registry?.setConnected(handle.peerId, false);
     try {
       await handle.session.close(reason);
     } catch {
@@ -1092,6 +1138,15 @@ export class AirLinkClient {
 
   private wireSession(handle: PeerHandle): void {
     const { session, pairing } = handle;
+
+    // PAIRING has no RECONNECTING state, so a ceremony whose link died used to
+    // sit on it for two minutes with nothing dialling. It keeps its keys and
+    // resumes on a new link, so it gets the same redial driver.
+    handle.offs.push(
+      session.events.on('linkLost', () => {
+        if (session.state === ConnectionState.PAIRING) this.scheduleReconnect(handle);
+      }),
+    );
 
     handle.offs.push(
       session.events.on('stateChanged', ({ state }) => {
@@ -1327,3 +1382,12 @@ export class AirLinkClient {
 }
 
 export { deriveAdvertisementToken, LOCAL_NETWORK_SERVICE_TYPE };
+
+/**
+ * Whether a session is waiting for a link to be supplied: reconnecting, or in
+ * the middle of a six-digit check whose link has died.
+ */
+function needsLink(session: PeerSession): boolean {
+  if (session.state === ConnectionState.RECONNECTING) return true;
+  return session.state === ConnectionState.PAIRING && session.currentLink?.state !== LinkState.CONNECTED;
+}
