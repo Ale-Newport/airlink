@@ -10,7 +10,6 @@ import {
   EmptyState,
   Gap,
   Label,
-  StatusBanner,
   haptic,
   useTheme,
 } from '../../ui/index.js';

@@ -28,7 +28,6 @@ import {
   publicIdentityOf,
   systemClock,
   systemRandom,
-  toHex,
   tokenRotation,
   type LocalIdentity,
   type PeerCapabilities,

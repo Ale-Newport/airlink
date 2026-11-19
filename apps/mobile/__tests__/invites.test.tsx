@@ -134,7 +134,7 @@ function inviteFor(sessionId: string, inviteId: string, players: string[], expir
 }
 
 test('an invitation arrives even though the Play tab was never opened', async () => {
-  const { clock, alejandro, maria, sessionA, sessionM } = await twoConnectedPhones();
+  const { clock, maria, sessionA, sessionM } = await twoConnectedPhones();
 
   // Maria is looking at Home. Her invite centre exists anyway, because
   // ClientProvider builds it at startup rather than leaving it to a screen.
