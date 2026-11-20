@@ -55,3 +55,22 @@ demo/dist/
 .vscode/*
 !.vscode/extensions.json
 *.swp
+
+# Local-only: internal plans, audits, App Store submission material and
+# promotional drafts. They live on the maintainer's machine, not in the repo.
+/IMPLEMENTATION_PLAN.md
+/STABILITY_AUDIT.md
+/docs/PASOS_APP_STORE.md
+/docs/APP_STORE_LISTING.md
+/docs/app-review-video.mp4
+LAUNCH*.md
+LAUNCH_KIT*
+launch/
+docs/launch/
+
+# AI assistant and agent tooling (local configuration only)
+.claude/
+CLAUDE.local.md
+.cursor/
+.aider*
+.codex/

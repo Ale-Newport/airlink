@@ -251,7 +251,6 @@ reason. [`docs/GAMES.md`](docs/GAMES.md).
 | [FILE_TRANSFER.md](docs/FILE_TRANSFER.md) · [SYNC.md](docs/SYNC.md) | The two hardest features |
 | [TESTING.md](docs/TESTING.md) | How to test a P2P app without two phones |
 | [APP_STORE.md](docs/APP_STORE.md) | Shipping it: submission, export compliance, and the two guidelines most likely to reject a P2P app |
-| [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) | The plan, and what is done |
 
 ---
 

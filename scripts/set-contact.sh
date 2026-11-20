@@ -52,12 +52,17 @@ PRIVACY="${SITE}privacy.html"
 # (the @ and dots of an address, the slashes of a URL), and a name can contain
 # anything at all, including an apostrophe.
 python3 - "$NAME" "$EMAIL" "$SITE" "$PRIVACY" "$GITHUB" <<'PY'
-import sys, re, html
+import os, sys, re, html
 name, email, site, privacy, github = sys.argv[1:6]
 safe_name = html.escape(name)
 safe_email = html.escape(email)
 
 def edit(path, pairs):
+    # Some targets (the App Store listing) are kept on the maintainer's machine
+    # and are not in the repository; skip them rather than fail.
+    if not os.path.exists(path):
+        print("  skipped (not present here): " + path)
+        return
     with open(path, encoding="utf-8") as f:
         text = f.read()
     for old, new in pairs:

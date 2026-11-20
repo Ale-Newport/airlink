@@ -456,9 +456,6 @@ Honest list. None of these blocks submission, but you should know about them.
   seven-tap gesture — but it is there.
 - **Android has never been compiled.** No Android SDK is installed on this
   machine. Irrelevant to the App Store; relevant the moment you want Google Play.
-- **Pool declares itself `REALTIME`** but resolves a whole shot inside
-  `applyAction`, so `tick()` is unreachable. **Air Hockey's `serveAt`** is an
-  absolute timestamp no snapshot carries. Both are in `STABILITY_AUDIT.md`.
 - **Group games (3+ players)** are not implemented.
 - **`hermes-engine`** ships without its own privacy manifest, and "hermes"
   appears on Apple's list of SDKs that must supply one. This may produce an
