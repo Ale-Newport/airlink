@@ -91,7 +91,7 @@ test('a name and a colour is the whole of onboarding, and it ends on the home sc
   // The permissions step asks the system for radios that this environment does
   // not have. Not getting them must still land the user on the home screen:
   // there is nothing to log in to, so there is nothing to be blocked by.
-  await user.press(screen.getByText(strings.permissions.allow));
+  await user.press(screen.getByText(strings.permissions.continue));
 
   // Onboarding gives the radios a settling window before it decides, so this
   // waits longer than the library's one-second default. It is not a guess: the

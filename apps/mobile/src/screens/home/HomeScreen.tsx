@@ -161,10 +161,11 @@ export function HomeScreen(): React.JSX.Element {
    * WHICH truth to tell, and whether Settings can do anything about it.
    *
    * Four reasons reach this screen and only three of them are "Bluetooth is
-   * off". A declined permission is not a switch the user forgot, and hardware
-   * with no Bluetooth radio has nothing in Settings to change - that case used
-   * to render an "Open Settings" button that went to a page which could not
-   * help, which is worse than saying nothing.
+   * off". A declined permission is not a switch the user forgot, so it gets an
+   * explanation and no button; and hardware with no Bluetooth radio has nothing
+   * in Settings to change - that case used to render an "Open Settings" button
+   * that went to a page which could not help, which is worse than saying
+   * nothing. Only a radio that is switched off is offered Settings.
    */
   const bluetoothBanner = useMemo(() => {
     const withWifi = radios.wifiOn;
@@ -176,7 +177,10 @@ export function HomeScreen(): React.JSX.Element {
           detail: withWifi
             ? strings.status.bluetoothDeniedWifiWorksDetail
             : strings.status.bluetoothDeniedDetail,
-          settings: true,
+          // Words only. The person has just answered the system prompt, and
+          // sending them to Settings after a "Don't Allow" is not ours to do
+          // (App Store guideline 5.1.1(iv)). The sentence says where it lives.
+          settings: false,
         };
       case TransportUnavailableReason.UNSUPPORTED_HARDWARE:
       case TransportUnavailableReason.UNSUPPORTED_OS_VERSION:

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { AppState, Linking, View } from 'react-native';
+import { AppState, View } from 'react-native';
 import { useIsFocused, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useCameraDevice, useCameraPermission } from 'react-native-vision-camera';
@@ -274,9 +274,11 @@ export function ScanCodeScreen(): React.JSX.Element {
             {local.scan.cameraBody}
           </Label>
           <Gap size="xl" />
-          <Button title={strings.permissions.allow} onPress={() => void requestPermission()} />
-          <Gap size="sm" />
-          <Button title={strings.permissions.notNow} variant="ghost" onPress={() => navigation.goBack()} />
+          {/* One button, and it always leads to the system prompt. A "Not now"
+              here would let the explanation stand in for the question (App
+              Store guideline 5.1.1(iv)); the modal's own swipe-down still
+              leaves the screen, as it does for every sheet. */}
+          <Button title={strings.permissions.continue} onPress={() => void requestPermission()} />
         </Screen>
       );
     }
@@ -286,8 +288,16 @@ export function ScanCodeScreen(): React.JSX.Element {
           icon="camera"
           title={strings.permissions.deniedTitle}
           body={`${local.scan.cameraBody} ${strings.permissions.deniedBody}`}
+          // Words, not a way into Settings: this is what a person sees after
+          // saying no to the camera, and sending them to Settings then is what
+          // guideline 5.1.1(iv) rules out. The two routes that need no camera
+          // are right here instead.
           action={
-            <Button title={strings.permissions.openSettings} onPress={() => void Linking.openSettings()} />
+            <>
+              <Button title={strings.profile.showQr} onPress={() => navigation.replace('MyCode')} />
+              <Gap size="sm" />
+              <Button title={strings.common.close} variant="ghost" onPress={() => navigation.goBack()} />
+            </>
           }
         />
       </Screen>

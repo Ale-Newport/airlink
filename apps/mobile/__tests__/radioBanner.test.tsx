@@ -78,14 +78,16 @@ test('a switched-off radio says so, and offers Settings', async () => {
   expect(screen.getByText(strings.permissions.openSettings)).toBeTruthy();
 });
 
-test('a declined permission is not called "off", and still offers Settings', async () => {
+test('a declined permission is not called "off", and is not sent to Settings', async () => {
   await bootToHome();
   await radioSays(TransportUnavailableReason.PERMISSION_DENIED, { wifiOn: false });
   expect(screen.getByText(strings.status.bluetoothDenied)).toBeTruthy();
   // The whole point: the old copy would have been shown here.
   expect(screen.queryByText(strings.status.bluetoothOff)).toBeNull();
-  // Settings IS the right destination for a permission, so the button stays.
-  expect(screen.getByText(strings.permissions.openSettings)).toBeTruthy();
+  // The sentence says where the switch lives; there is no button. A person who
+  // has just tapped "Don't Allow" is not redirected to Settings (App Store
+  // guideline 5.1.1(iv)).
+  expect(screen.queryByText(strings.permissions.openSettings)).toBeNull();
 });
 
 test('a permission never asked for is treated like a declined one', async () => {
@@ -93,6 +95,7 @@ test('a permission never asked for is treated like a declined one', async () => 
   await radioSays(TransportUnavailableReason.PERMISSION_NOT_REQUESTED, { wifiOn: false });
   expect(screen.getByText(strings.status.bluetoothDenied)).toBeTruthy();
   expect(screen.queryByText(strings.status.bluetoothOff)).toBeNull();
+  expect(screen.queryByText(strings.permissions.openSettings)).toBeNull();
 });
 
 test('hardware with no radio is told the truth, with NO dead Settings button', async () => {

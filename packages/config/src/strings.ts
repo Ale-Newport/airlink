@@ -35,8 +35,15 @@ export const strings = {
     localNetworkBody: 'When you share a Wi-Fi network, photos and video move much faster. Only devices you connect to can see you.',
     nearbyDevicesTitle: 'Nearby devices',
     nearbyDevicesBody: `${brand.name} needs this to connect directly to a friend's phone over Wi-Fi.`,
-    allow: 'Allow',
-    notNow: 'Not now',
+    /**
+     * The button under our own explanation, before the system's prompt. It must
+     * say Continue (or Next), never Allow: the system sheet that follows is the
+     * only place a person allows anything, and there is deliberately no "Not
+     * now" beside it - the explanation always leads to the prompt (App Store
+     * guideline 5.1.1(iv)).
+     */
+    continue: 'Continue',
+    /** Only for a system switch the person can flip, never after a refusal. */
     openSettings: 'Open Settings',
     deniedTitle: 'Permission needed',
     deniedBody: 'You can turn this on any time in Settings.',

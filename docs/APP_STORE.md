@@ -39,6 +39,7 @@ These were blockers or near-blockers in the repo. They are fixed and verified.
 | `scripts/archive-ios.sh` added | There was no way to produce an uploadable build at all. |
 | "Report and block" added to chat | Guideline 1.2 requires a way to report content and block the sender. See Part 4. |
 | Two trademarked game titles renamed | "Battleship" and "Connect Four" are Hasbro trademarks (5.2.5). Now "Fleet Hunt" and "Four in a Row". The internal `id`s are unchanged, so compatibility is intact. |
+| Permission screens reworked (5.1.1(iv)) | App Review rejected build 1.0.0 (9) for three things: sending people to Settings after they tapped "Don't Allow", an "Allow" button under the app's own explanation, and a "Not now" button beside it. The explanations (onboarding and the camera screen) now have a single **Continue** button that always leads to the system prompt; "Allow" and "Not now" are gone from the shared strings. After a refusal (Bluetooth, local network, camera, notifications) the app explains in words where the switch lives and offers no button into Settings; the camera screen offers *Show my QR code* instead. A switched-off Bluetooth radio, and a person tapping an already-refused notifications switch themselves, still offer Settings. Pinned by `apps/mobile/__tests__/permissionPrompts.test.tsx` and `radioBanner.test.tsx`. |
 
 Two real bugs were found while doing this, both fixed with tests:
 

@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
-import { AccessibilityInfo, Linking, Platform, ScrollView, View } from 'react-native';
+import { AccessibilityInfo, Platform, ScrollView, View } from 'react-native';
 import { strings } from '@airlink/config';
-import { Button, Card, Gap, Label, StatusBanner, useTheme } from '../../ui/index.js';
+import { Card, Gap, Label, StatusBanner, useTheme } from '../../ui/index.js';
 import { onboardingCopy } from './copy.js';
 
 /**
@@ -59,7 +59,7 @@ export function PermissionsStep({
    *
    * The banner appears below the fold and the only other signal is the button
    * relabelling itself to Retry - neither of which VoiceOver notices. Without
-   * this, a blind user presses Allow, waits, and is told nothing at all.
+   * this, a blind user presses Continue, waits, and is told nothing at all.
    */
   useEffect(() => {
     if (!trouble) return;
@@ -114,20 +114,11 @@ export function PermissionsStep({
               trouble === 'profile' ? onboardingCopy.profileFailedDetail : onboardingCopy.startFailedDetail
             }
           />
-          {trouble === 'radios' ? (
-            <>
-              <Gap size="sm" />
-              <Button
-                title={strings.permissions.openSettings}
-                variant="ghost"
-                onPress={() => {
-                  // Opening Settings can fail on a locked-down device; there is
-                  // nothing useful to say if it does, and the screen still works.
-                  void Linking.openSettings().catch(() => undefined);
-                }}
-              />
-            </>
-          ) : null}
+          {/* No "Open Settings" here. This banner can appear straight after the
+              person answered a system prompt, and sending them to Settings the
+              moment they said no is exactly what App Store guideline 5.1.1(iv)
+              forbids. Retry and Continue anyway are the way on; Home explains
+              later, in words only, what is switched off. */}
         </>
       ) : null}
     </ScrollView>

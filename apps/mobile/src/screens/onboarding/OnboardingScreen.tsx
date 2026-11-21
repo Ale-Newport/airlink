@@ -350,7 +350,7 @@ export function OnboardingScreen({ navigation }: Props): React.JSX.Element {
         return (
           <>
             <Button
-              title={trouble ? strings.common.retry : strings.permissions.allow}
+              title={trouble ? strings.common.retry : strings.permissions.continue}
               onPress={() => void finish()}
               loading={busy}
               disabled={!nameReady}

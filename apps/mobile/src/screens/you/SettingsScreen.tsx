@@ -124,11 +124,14 @@ export function SettingsScreen(): React.JSX.Element {
           return;
         }
         // Asked and refused, in the same breath. Saying nothing here would
-        // leave a switch that sprang back with no explanation.
+        // leave a switch that sprang back with no explanation - but no Settings
+        // button either: the person has just answered the system prompt, and
+        // sending them to Settings straight after a "Don't Allow" is what App
+        // Store guideline 5.1.1(iv) rules out. Tapping the switch again later
+        // is the person's own request, and that one does offer Settings.
         if (next === 'denied') {
           Alert.alert(local.settings.notificationsDeniedTitle, local.settings.notificationsDeniedBody, [
-            { text: strings.common.cancel, style: 'cancel' },
-            { text: strings.permissions.openSettings, onPress: openSettings },
+            { text: strings.common.done, style: 'cancel' },
           ]);
         }
       });
