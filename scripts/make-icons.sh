@@ -3,7 +3,7 @@
 #
 # Uses macOS's built-in tools so it needs no extra dependencies:
 #   qlmanage renders the SVG, sips resizes.
-# Point icon-source.svg at real artwork and run this again.
+# Needs ImageMagick (brew install imagemagick) to flatten the alpha channel.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -22,6 +22,9 @@ IOS="apps/mobile/ios/AirLink/Images.xcassets/AppIcon.appiconset"
 mkdir -p "$IOS"
 # Xcode 14+ accepts a single 1024px icon and derives the rest.
 sips -z 1024 1024 "$MASTER" --out "$IOS/icon-1024.png" >/dev/null
+# App Store Connect rejects an icon with an alpha channel, and qlmanage renders
+# RGBA. Flatten it onto the accent colour so none survives.
+magick "$IOS/icon-1024.png" -background '#0A6CFF' -alpha remove -alpha off -colorspace sRGB -depth 8 PNG24:"$IOS/icon-1024.png"
 cat > "$IOS/Contents.json" <<'JSON'
 {
   "images" : [
@@ -30,6 +33,8 @@ cat > "$IOS/Contents.json" <<'JSON'
   "info" : { "author" : "xcode", "version" : 1 }
 }
 JSON
+
+magick "$IOS/icon-1024.png" -resize 180x180 demo/public/media/icon-180.png
 
 ANDROID="apps/mobile/android/app/src/main/res"
 for entry in "mdpi:48" "hdpi:72" "xhdpi:96" "xxhdpi:144" "xxxhdpi:192"; do
@@ -41,4 +46,3 @@ for entry in "mdpi:48" "hdpi:72" "xhdpi:96" "xxhdpi:144" "xxxhdpi:192"; do
 done
 
 echo "Done. iOS: $IOS  Android: $ANDROID/mipmap-*"
-echo "These are PLACEHOLDERS until assets/icon-source.svg is real artwork."

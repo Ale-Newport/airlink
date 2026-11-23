@@ -1,23 +1,44 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
   <!--
-    PLACEHOLDER app icon.
+    AirLink app icon.
 
-    Two nodes and the arc between them: the product in one mark, with no
-    Bluetooth glyph, because Bluetooth is an implementation detail rather than
-    the idea. Deliberately simple so it is obviously a placeholder and reads at
-    40 px while it is one.
+    A signal leaving one node and arriving at another, with nothing in between:
+    the product in one mark. No Bluetooth glyph, because Bluetooth is an
+    implementation detail rather than the idea.
+
+    Rules it follows, so it survives being 40 px on a home screen:
+      - full bleed square, no transparency, no rounded corners (iOS masks it);
+      - the mark sits inside the central 70% and is optically centred;
+      - three shapes only, so nothing turns to mush when it shrinks;
+      - the arcs fade as they travel, which is what makes it read as a signal
+        with a direction rather than as a pair of brackets.
   -->
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#0A6CFF"/>
-      <stop offset="100%" stop-color="#0B4FCC"/>
+    <linearGradient id="bg" x1="0.15" y1="0" x2="0.85" y2="1">
+      <stop offset="0%" stop-color="#3D9BFF"/>
+      <stop offset="55%" stop-color="#0A6CFF"/>
+      <stop offset="100%" stop-color="#0838A8"/>
     </linearGradient>
+    <radialGradient id="glow" cx="0.3" cy="0.22" r="0.75">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.22"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
   </defs>
+
   <rect width="1024" height="1024" fill="url(#bg)"/>
-  <g stroke="#FFFFFF" fill="none" stroke-linecap="round">
-    <path d="M 312 600 Q 512 380 712 600" stroke-width="46" opacity="0.95"/>
-    <path d="M 372 668 Q 512 520 652 668" stroke-width="34" opacity="0.55"/>
+  <rect width="1024" height="1024" fill="url(#glow)"/>
+
+  <g transform="translate(-26 0)">
+  <!-- The signal: three arcs centred on the sending node. -->
+  <g fill="none" stroke="#FFFFFF" stroke-linecap="round" stroke-width="46">
+    <path d="M 366.2 419.7 A 150 150 0 0 1 366.2 604.3" opacity="1"/>
+    <path d="M 437.1 364.2 A 240 240 0 0 1 437.1 659.8" opacity="0.72"/>
+    <path d="M 508.0 308.8 A 330 330 0 0 1 508.0 715.2" opacity="0.44"/>
   </g>
-  <circle cx="312" cy="600" r="62" fill="#FFFFFF"/>
-  <circle cx="712" cy="600" r="62" fill="#FFFFFF"/>
+
+  <!-- The two nodes. The receiving one has a ring: it is the one listening. -->
+  <circle cx="248" cy="512" r="82" fill="#FFFFFF"/>
+  <circle cx="776" cy="512" r="82" fill="#FFFFFF"/>
+  <circle cx="776" cy="512" r="124" fill="none" stroke="#FFFFFF" stroke-width="22" opacity="0.38"/>
+  </g>
 </svg>
